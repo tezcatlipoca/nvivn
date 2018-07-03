@@ -13,7 +13,7 @@ const id = crypto.randomBytes(4)
 console.log(hub, id)
 // const encoded = proquint.encode(Buffer.concat([type, hub, id]));
 // const encoded = proquint.encode(Buffer.concat([hub, id]));
-const encoded = proquint.encode(Buffer.concat([hub, id]));
+const encoded = proquint.encode(Buffer.concat([id, hub]));
 console.log(encoded);
 
 const ghash = geohash.encode(37.749023, -122.422198, 7)

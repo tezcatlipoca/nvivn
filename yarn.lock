@@ -38,6 +38,10 @@ ngeohash@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/ngeohash/-/ngeohash-0.6.0.tgz#329713e9e73d1f1a46d92aab0b94adb94533f687"
 
+oyaml@^0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.0.6.tgz#bdc9e9b7ac1b522ec74c550e5c251e1461cbb8cf"
+
 pngjs@^3.0.1:
   version "3.3.3"
   resolved "https://registry.yarnpkg.com/pngjs/-/pngjs-3.3.3.tgz#85173703bde3edac8998757b96e5821d0966a21b"
