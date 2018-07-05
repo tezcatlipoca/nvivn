@@ -9,8 +9,7 @@ const timestamp = require('../timestamp')
 const { HUB_ID, HUB_SECRET_KEY, HUB_PUBLIC_KEY } = process.env
 
 const getPublicKey = function(id) {
-  if (id === HUB_ID) return HUB_PUBLIC_KEY
-  else throw new Error(`Don't have public key for ${id}`)
+  return id === HUB_ID ? HUB_PUBLIC_KEY : null
 }
 
 const createSignature = function(message) {
@@ -31,7 +30,9 @@ const createHub = function(opts={}) {
   const announceMessage = oyaml.stringify(Object.assign({t, id}, opts, { from:HUB_ID, type:'profile', t, id, publicKeys:[keys.publicKey] }))
   const meta = {
     route: [{ id: HUB_ID, t: timestamp.now()}],
-    signature: createSignature(announceMessage)
+    signed: [
+      { id: HUB_ID, signature: createSignature(announceMessage) }
+    ]
   }
   return {
     id,
@@ -42,9 +43,24 @@ const createHub = function(opts={}) {
 
 const verifyMessage = function(messageString) {
   const [body, metaString] = messageString.split("|").map(s => s.trim())
-  const message = oyaml.parse(body)
   const meta = oyaml.parse(metaString)
-  return signatures.verify(new Buffer(body), Buffer.from(meta.signature, 'base64'), bs58.decode(getPublicKey(message.from)))
+  const sigResults = {}
+  const bodyBuffer = new Buffer(body)
+  let anyVerified = false
+  meta.signed.forEach(({ id, signature }) => {
+    const pubKey = getPublicKey(id)
+    if (pubKey) {
+      const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
+      sigResults[id] = verificationResult
+      if (verificationResult) anyVerified = true
+    } else {
+      sigResults[id] = undefined
+    }
+  })
+  return {
+    verified: anyVerified,
+    details: sigResults
+  }
 }
 
 if (require.main === module) {
