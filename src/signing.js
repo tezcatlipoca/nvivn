@@ -9,8 +9,8 @@ const sign = function(message, secretKey) {
   return signature.toString('base64')
 }
 
-const verify = function(messageString, getPublicKey) {
-  const message = messages.parse(messageString, { parseBody: false })
+const verify = function(inputMessage, getPublicKey) {
+  const message = typeof inputMessage === 'string' ? messages.parse(messageString, { parseBody: false }) : inputMessage
   const sigResults = {}
   const bodyBuffer = new Buffer(message.rawBody)
   let anyVerified = false

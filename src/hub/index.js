@@ -26,7 +26,9 @@ class Hub {
   }
 
   createHub(opts={}) {
-    return this.createProfile(crypto.randomBytes(2), opts)
+    const hubResult = this.createProfile(crypto.randomBytes(2), opts)
+    if (this.writeMessage) this.writeMessage(hubResult.message)
+    return hubResult
   }
 
   createProfile(idBuffer, opts={}) {
@@ -39,7 +41,7 @@ class Hub {
     }
   
     const t = timestamp.now()
-    const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:'profile', t, id, publicKeys:[keys.publicKey] })
+    const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:'hub-profile', t, id, publicKeys:[keys.publicKey] })
     const meta = {
       route: [{ id: this.hubId, t: timestamp.now()}],
       signed: [
@@ -73,3 +75,5 @@ if (require.main === module) {
   console.log("verified?", verified)
 
 }
+
+module.exports = Hub
