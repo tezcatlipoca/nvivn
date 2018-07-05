@@ -7,6 +7,7 @@ const bs58 = require('bs58')
 const timestamp = require('../timestamp')
 
 const { HUB_ID, HUB_SECRET_KEY, HUB_PUBLIC_KEY } = process.env
+const HUB_ID_BUFFER = proquint.decode(HUB_ID)
 
 const getPublicKey = function(id) {
   return id === HUB_ID ? HUB_PUBLIC_KEY : null
@@ -18,7 +19,15 @@ const createSignature = function(message) {
 }
 
 const createHub = function(opts={}) {
-  const id = proquint.encode(crypto.randomBytes(2))
+  return createProfile(crypto.randomBytes(2), opts)
+}
+
+const createPerson = function(opts={}) {
+  return createProfile(Buffer.concat([crypto.randomBytes(4), HUB_ID_BUFFER]), opts)
+}
+
+const createProfile = function(idBuffer, opts={}) {
+  const id = proquint.encode(idBuffer)
 
   const keyPair = signatures.keyPair()
   const keys = {
@@ -65,8 +74,9 @@ const verifyMessage = function(messageString) {
 
 if (require.main === module) {
   // const { id, keys, message } = createHub({ geo: "San Francisco <9q8ywpy>" })
-  const { id, keys, message } = createHub()
-  console.log("new hub id:", id)
+  // const { id, keys, message } = createHub()
+  const { id, keys, message } = createPerson()
+  console.log("new id:", id)
   console.log("secret key:", keys.secretKey)
   console.log(`announce message:\n${message}`)
 
