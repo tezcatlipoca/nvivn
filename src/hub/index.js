@@ -1,9 +1,10 @@
-const signatures = require('sodium-signatures')
-const oyaml = require('oyaml')
 const proquint = require('proquint')
 const crypto = require('crypto')
 const bs58 = require('bs58')
+const signatures = require('sodium-signatures')
 const timestamp = require('../timestamp')
+const { sign, verify } = require('../signing')
+const messages = require('../messages')
 
 class Hub {
   constructor(config) {
@@ -13,6 +14,7 @@ class Hub {
     this.config = config
     this.hubId = config.hubId
     this.hubIdBuffer = proquint.decode(config.hubId)
+    this.getPublicKey = this.getPublicKey.bind(this)
   }
 
   getPublicKey(id) {
@@ -37,47 +39,24 @@ class Hub {
     }
   
     const t = timestamp.now()
-    const announceMessage = oyaml.stringify(Object.assign({t, id}, opts, { from:this.hubId, type:'profile', t, id, publicKeys:[keys.publicKey] }))
+    const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:'profile', t, id, publicKeys:[keys.publicKey] })
     const meta = {
       route: [{ id: this.hubId, t: timestamp.now()}],
       signed: [
-        { id: this.hubId, signature: this.createSignature(announceMessage) }
+        { id: this.hubId, signature: sign(announceMessage, this.config.secretKey) }
       ]
     }
     return {
       id,
       keys,
-      message: `${announceMessage} | ${oyaml.stringify(meta)}`
+      message: messages.stringify({ body: announceMessage, meta})
     }
-  }  
+  }
 
-  createSignature(message) {
-    const signature = signatures.sign(new Buffer(message), bs58.decode(this.config.secretKey))
-    return signature.toString('base64')
+  verifyMessage(message) {
+    return verify(message, this.getPublicKey)
   }
-  
-  verifyMessage(messageString) {
-    const [body, metaString] = messageString.split("|").map(s => s.trim())
-    const meta = oyaml.parse(metaString)
-    const sigResults = {}
-    const bodyBuffer = new Buffer(body)
-    let anyVerified = false
-    meta.signed.forEach(({ id, signature }) => {
-      const pubKey = this.getPublicKey(id)
-      if (pubKey) {
-        const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
-        sigResults[id] = verificationResult
-        if (verificationResult) anyVerified = true
-      } else {
-        sigResults[id] = undefined
-      }
-    })
-    return {
-      verified: anyVerified,
-      details: sigResults
-    }
-  }
-    
+
 }
 
 if (require.main === module) {
