@@ -15,11 +15,14 @@ const verify = function(inputMessage, getPublicKey) {
   const bodyBuffer = new Buffer(message.rawBody)
   let anyVerified = false
   message.meta.signed.forEach(({ id, signature }) => {
-    const pubKey = getPublicKey(id)
-    if (pubKey) {
-      const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
-      sigResults[id] = verificationResult
-      if (verificationResult) anyVerified = true
+    const pubKeys = getPublicKey(id)
+    if (pubKeys) {
+      pubKeys.forEach(pubKey => {
+        if (sigResults[id] === true) return
+        const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
+        sigResults[id] = verificationResult
+        if (verificationResult) anyVerified = true  
+      })
     } else {
       sigResults[id] = undefined
     }

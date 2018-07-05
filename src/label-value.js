@@ -7,7 +7,7 @@ const encode = function({ label, value }) {
 }
 
 const decode = function(str) {
-  if (typeof str === 'undefined') return { value: undefined }
+  if (!str) return null
   const match = str.match(/([^<]+) <([^>]+)>/)
   if (match) {
     return {

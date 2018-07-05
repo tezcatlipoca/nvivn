@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "main": "index.js",
   "author": "Jesse Kriss <jesse@jklabs.net>",
+  "scripts": {
+    "cli": "./node_modules/.bin/magicli src/cli.js"
+  },
   "dependencies": {
     "base32-encoding": "^1.0.0",
     "bs58": "^4.0.1",
@@ -10,6 +13,7 @@
     "dotenv": "^6.0.0",
     "is-number": "^6.0.0",
     "lowdb": "^1.0.0",
+    "magicli": "^0.1.2",
     "ngeohash": "^0.6.0",
     "oyaml": "^0.0.6",
     "proquint": "^0.0.1",

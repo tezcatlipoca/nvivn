@@ -14,11 +14,11 @@ class Hub {
     this.config = config
     this.hubId = config.hubId
     this.hubIdBuffer = proquint.decode(config.hubId)
-    this.getPublicKey = this.getPublicKey.bind(this)
+    this.getPublicKeys = this.getPublicKeys.bind(this)
   }
 
-  getPublicKey(id) {
-    return id === this.config.hubId ? this.config.publicKey : null
+  getPublicKeys(id) {
+    return id === this.config.hubId ? [this.config.publicKey] : null
   }
 
   createPerson(opts={}) {
@@ -56,7 +56,7 @@ class Hub {
   }
 
   verifyMessage(message) {
-    return verify(message, this.getPublicKey)
+    return verify(message, this.getPublicKeys)
   }
 
 }
