@@ -13,7 +13,8 @@ const parse = function(messageString, opts={}) {
 }
 
 const stringify = function({ body, meta }) {
-  return `${oyaml.stringify(body)} | ${oyaml.stringify(meta)}`
+  if (!body) throw new Error("Must provide body")
+  return `${typeof body === 'string' ? body : oyaml.stringify(body)} | ${oyaml.stringify(meta)}`
 }
 
 module.exports = {

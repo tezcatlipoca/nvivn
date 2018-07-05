@@ -22,16 +22,18 @@ class Hub {
   }
 
   createPerson(opts={}) {
-    return this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), opts)
+    const personResult = this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), 'person', opts)
+    if (this.writeMessage) this.writeMessage(personResult.message)
+    return personResult
   }
 
   createHub(opts={}) {
-    const hubResult = this.createProfile(crypto.randomBytes(2), opts)
+    const hubResult = this.createProfile(crypto.randomBytes(2), 'hub', opts)
     if (this.writeMessage) this.writeMessage(hubResult.message)
     return hubResult
   }
 
-  createProfile(idBuffer, opts={}) {
+  createProfile(idBuffer, type, opts={}) {
     const id = proquint.encode(idBuffer)
   
     const keyPair = signatures.keyPair()
@@ -41,7 +43,7 @@ class Hub {
     }
   
     const t = timestamp.now()
-    const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:'hub-profile', t, id, publicKeys:[keys.publicKey] })
+    const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
     const meta = {
       route: [{ id: this.hubId, t: timestamp.now()}],
       signed: [
@@ -53,6 +55,16 @@ class Hub {
       keys,
       message: messages.stringify({ body: announceMessage, meta})
     }
+  }
+
+  createMessage(messageString) {
+    const { body, meta = {} } = messages.parse(messageString)
+    meta.route = [{ id: this.hubId, t: timestamp.now()}]
+    if (!meta.signed) meta.signed = []
+    meta.signed.push({ id: this.hubId, signature: sign(body, this.config.secretKey) })
+    const message = messages.stringify({ body, meta })
+    if (this.writeMessage) this.writeMessage(message)
+    return message
   }
 
   verifyMessage(message) {

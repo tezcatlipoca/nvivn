@@ -35,7 +35,8 @@ class FileHub extends Hub {
       const m = messages.parse(line)
       const { body, meta } = m
       if (body.type === 'hub-profile') {
-        if (verify(m, this.getPublicKeys).verified) {
+        const verificationResult = verify(m, this.getPublicKeys)
+        if (verificationResult.verified) {
           const timeValue = parseInt(labelValue.getValue(body.t))
           // only update the hub info if the timestamp of this message is newer
           const h = this.db.get('hubs').get(body.id).value()
@@ -48,6 +49,8 @@ class FileHub extends Hub {
             .set(body.id, hubData)
             .write()
           }
+        } else {
+          console.error(`Message from ${body.id} didn't pass verification`, verificationResult)
         }
       }
     })

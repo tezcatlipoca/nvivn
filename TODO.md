@@ -1,0 +1,3 @@
+- index person profiles in the hub's namespace
+- don't allow assignment of already assigned hub ids
+- don't allow assignment of already assigned person ids

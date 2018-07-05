@@ -4,20 +4,23 @@ const oyaml = require('oyaml')
 const messages = require('./messages')
 
 const sign = function(message, secretKey) {
-  const messageString = oyaml.stringify(message)
+  const messageString = typeof message === 'string' ? message : oyaml.stringify(message)
   const signature = signatures.sign(new Buffer(messageString), bs58.decode(secretKey))
   return signature.toString('base64')
 }
 
 const verify = function(inputMessage, getPublicKey) {
-  const message = typeof inputMessage === 'string' ? messages.parse(messageString, { parseBody: false }) : inputMessage
+  const message = typeof inputMessage === 'string' ? messages.parse(inputMessage, { parseBody: false }) : inputMessage
   const sigResults = {}
   const bodyBuffer = new Buffer(message.rawBody)
   let anyVerified = false
   message.meta.signed.forEach(({ id, signature }) => {
-    const pubKeys = getPublicKey(id)
-    if (pubKeys) {
+    let pubKeys = getPublicKey(id)
+    console.log("got pub keys", pubKeys)
+    if (!Array.isArray(pubKeys)) pubKeys = [pubKeys]
+    if (pubKeys && pubKeys.length > 0) {
       pubKeys.forEach(pubKey => {
+        console.log("checking public key:", pubKey)
         if (sigResults[id] === true) return
         const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
         sigResults[id] = verificationResult
