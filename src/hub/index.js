@@ -28,47 +28,31 @@ const createHub = function(opts={}) {
   }
 
   const t = timestamp.now()
-  // t:"2018-08-02 <1530548886>" from:bifov geo:"San Francisco <9q8ywpy>" type:profile created:"2018-08-02 <1530548886>" hosts:[url:"https://bifov.route.earth"]
-  const announceMessage = oyaml.stringify(Object.assign({t, id}, opts, { from:HUB_ID, type:'hub-profile', t, id, publicKeys:[keys.publicKey] }))
-  const signedMessage = addRoute(signMessage(announceMessage))
+  const announceMessage = oyaml.stringify(Object.assign({t, id}, opts, { from:HUB_ID, type:'profile', t, id, publicKeys:[keys.publicKey] }))
+  const meta = {
+    route: [{ id: HUB_ID, t: timestamp.now()}],
+    signature: createSignature(announceMessage)
+  }
   return {
     id,
     keys,
-    message: signedMessage
+    message: `${announceMessage} | ${oyaml.stringify(meta)}`
   }
 }
 
-const signMessage = function(message) {
-  // TODO add the _key skipping here too, just in case those fields have been added already
-  const sig = createSignature(message)
-  let messageObj = oyaml.parse(message)
-  messageObj._signature = sig
-  return oyaml.stringify(messageObj)
-}
-
-const addRoute = function(message) {
-  let m = oyaml.parse(message)
-  if (!m._route) m._route = []
-  m._route.push({ id: HUB_ID, t: timestamp.now()})
-  return oyaml.stringify(m)
-}
-
-const verifyMessage = function(message) {
-  const m = oyaml.parse(message)
-  const sig = m._signature
-  let originalMessageParts = {}
-  Object.keys(m).forEach(k => {
-    if (k[0] !== '_') originalMessageParts[k] = m[k]
-  })
-  const messageWithoutSig = oyaml.stringify(originalMessageParts)
-  return signatures.verify(new Buffer(messageWithoutSig), Buffer.from(sig, 'base64'), bs58.decode(getPublicKey(m.from)))
+const verifyMessage = function(messageString) {
+  const [body, metaString] = messageString.split("|").map(s => s.trim())
+  const message = oyaml.parse(body)
+  const meta = oyaml.parse(metaString)
+  return signatures.verify(new Buffer(body), Buffer.from(meta.signature, 'base64'), bs58.decode(getPublicKey(message.from)))
 }
 
 if (require.main === module) {
-  const { id, keys, message } = createHub({ geo: "San Francisco <9q8ywpy>" })
+  // const { id, keys, message } = createHub({ geo: "San Francisco <9q8ywpy>" })
+  const { id, keys, message } = createHub()
   console.log("new hub id:", id)
   console.log("secret key:", keys.secretKey)
-  console.log("announce message:\n", message)
+  console.log(`announce message:\n${message}`)
 
   const verified = verifyMessage(message)
   console.log("verified?", verified)
