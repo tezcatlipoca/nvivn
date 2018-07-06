@@ -93,6 +93,12 @@ commander@^2.9.0:
   version "2.16.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.16.0.tgz#f16390593996ceb4f3eeb020b31d78528f7f8a50"
 
+datemath-parser@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/datemath-parser/-/datemath-parser-1.0.6.tgz#d527dabf8541b3da1b661d81c16c328f3b9a8dc5"
+  dependencies:
+    moment "^2.22.2"
+
 deep-extend@~0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/deep-extend/-/deep-extend-0.6.0.tgz#c4fa7c95404a17a9c3e8ca7e1537312b736330ac"
@@ -100,6 +106,10 @@ deep-extend@~0.6.0:
 deepmerge@^2.0.0:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-2.1.1.tgz#e862b4e45ea0555072bf51e7fd0d9845170ae768"
+
+filtrex@^0.5.4:
+  version "0.5.4"
+  resolved "https://registry.yarnpkg.com/filtrex/-/filtrex-0.5.4.tgz#98075d518f068c4f58b7b589a227d98bd9f6395d"
 
 find-up@^2.1.0:
   version "2.1.0"
@@ -250,6 +260,10 @@ magicli@^0.1.2:
     find-up "^2.1.0"
     for-each-property "0.0.4"
     inspect-property "0.0.6"
+
+moment@^2.22.2:
+  version "2.22.2"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.22.2.tgz#3c257f9839fc0e93ff53149632239eb90783ff66"
 
 nan@^2.4.0:
   version "2.10.0"

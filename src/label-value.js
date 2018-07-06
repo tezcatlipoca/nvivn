@@ -21,6 +21,7 @@ const decode = function(str) {
 }
 
 const getValue = function(str) {
+  if (!str) return null
   return decode(str).value
 }
 

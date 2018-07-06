@@ -9,6 +9,7 @@ const timestamp = require('../timestamp')
 const { sign, verify } = require('../signing')
 const messages = require('../messages')
 const labelValue = require('../label-value')
+const createFilter = require('../filters')
 
 class Hub {
   constructor(config) {
@@ -92,15 +93,22 @@ class Hub {
   showMessages(onMessage, filter=null) {
     let filterFn = filter
     if (filter === null || filter === true) filterFn = () => true
-    if (typeof filter === 'string') filter = oyaml.parse(filter)
-    // console.log("filter is", filter, typeof filter)
-    if (typeof filter === 'object') filterFn = ({ body }) => {
-      for (let k in filter) {
-        // console.log("checking", k, body[k], filter[k])
-        if (body[k] !== filter[k]) return false
-      }
-      return true
+    // if (typeof filter === 'string') filter = oyaml.parse(filter)
+    let filterString
+    try {
+      filterString = oyaml.parse(filter)
+    } catch (err) {
+      filterString = { body: filter }
     }
+    if (typeof filter === 'string') filterFn = createFilter(filterString)
+    // console.log("filter is", filter, typeof filter)
+    // if (typeof filter === 'object') filterFn = ({ body }) => {
+    //   for (let k in filter) {
+    //     // console.log("checking", k, body[k], filter[k])
+    //     if (body[k] !== filter[k]) return false
+    //   }
+    //   return true
+    // }
     this.scanMessages(message => {
       if (filterFn(message)) onMessage(message)
     })

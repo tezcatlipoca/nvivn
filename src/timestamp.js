@@ -6,8 +6,9 @@ const format = function(time) {
 }
 
 const parse = function(timeString) {
-  const value = getValue(timeString)
-  return new Date(value * 1000)
+  let value = getValue(timeString)
+  if (value && value.match(/^\d{9,}$/)) value = parseInt(value) * 1000
+  return new Date(value)
 }
 
 const now = function() {
