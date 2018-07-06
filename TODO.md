@@ -1,3 +1,5 @@
 - index person profiles in the hub's namespace
 - don't allow assignment of already assigned hub ids
 - don't allow assignment of already assigned person ids
+- make sure that putting a | character in the message part doesn't break parsing
+- make sure line by line scans are ending on match

@@ -43,12 +43,6 @@ class FileHub extends Hub {
       rl.on('close', () => resolve())
     })
   }
-  scanMessages(lineFn) {
-    return this.scanLines(this.messageFile, line => {
-      const m = messages.parse(line)
-      lineFn(m)
-    })
-  }
 }
 
 module.exports = FileHub

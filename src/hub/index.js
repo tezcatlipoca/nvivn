@@ -5,6 +5,7 @@ const signatures = require('sodium-signatures')
 const low = require('lowdb')
 const Memory = require('lowdb/adapters/Memory')
 const oyaml = require('oyaml')
+const escapeStringRegexp = require('escape-string-regexp')
 const timestamp = require('../timestamp')
 const { sign, verify } = require('../signing')
 const messages = require('../messages')
@@ -69,8 +70,16 @@ class Hub {
     }
   }
 
-  importMessages(messagesString) {
-    messagesString.split("\n").forEach(m => this.createMessage(m, { sign: false }))
+  async importMessages(messagesString) {
+    messagesString.split("\n").forEach(async m => {
+      const { meta } = messages.parse(m)
+      if (meta && meta.hash) {
+        const exists = await this.messageExists(meta.hash)
+        // console.log(meta.hash, "exists already?", exists)
+        if (exists) return
+      }
+      this.createMessage(m, { sign: false })
+    })
   }
 
   createMessage(messageString, opts={ sign: true }) {
@@ -86,8 +95,8 @@ class Hub {
       // create a hash based on the message body and this first route hub and timestamp
       const hash = crypto.createHash(this.hashAlgorithm)
       hash.update(messageString)
-      hash.update(this.hubId)
-      hash.update(now)
+      hash.update(meta.route[0].id)
+      hash.update(labelValue.getValue(meta.route[0].t))
       // meta.hash = `${this.hashAlgorithm}-${bs58.encode(hash.digest())}`
       meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
     }
@@ -98,6 +107,22 @@ class Hub {
 
   verifyMessage(message) {
     return verify(message, this.getPublicKeys)
+  }
+
+  messageExists(hash) {
+    const regex = new RegExp(`\\|.*hash:${escapeStringRegexp(hash)}($|"|\s)`)
+    return new Promise(resolve => {
+      this.scanLines(this.messageFile, line => {
+        if (line.match(regex)) resolve(true)
+      }).then(() => resolve(false))
+    })
+  }
+
+  scanMessages(lineFn) {
+    return this.scanLines(this.messageFile, line => {
+      const m = messages.parse(line)
+      lineFn(m)
+    })
   }
 
   showMessages(onMessage, filter=null, opts={}) {

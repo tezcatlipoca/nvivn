@@ -2,6 +2,7 @@
 
 require('magicli')()
 
+const debug = require('debug')('cli')
 const messages = require('./messages')
 const signing = require('./signing')
 const config = require('./config')
@@ -64,6 +65,14 @@ module.exports.scanPeople = function(since) {
 
 module.exports.profileExists = function(id) {
   hub.profileExists(id).then(result => console.log(`Does ${id} exist?`, result))
+}
+
+module.exports.messageExists = function(hash) {
+  debug('checking for', hash)
+  hub.messageExists(hash).then(result => {
+    console.log(`Does ${hash} exist?`, result)
+    debug('done')
+  })
 }
 
 module.exports.messagesFor = function(hubId, since, outFile) {
