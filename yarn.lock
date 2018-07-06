@@ -67,6 +67,12 @@ camelcase@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/camelcase/-/camelcase-4.1.0.tgz#d545635be1e33c542649c69173e5de6acfae34dd"
 
+canvas@^1.6.9:
+  version "1.6.11"
+  resolved "https://registry.yarnpkg.com/canvas/-/canvas-1.6.11.tgz#c2d8bcf283281f19ded14fa163a111804522330d"
+  dependencies:
+    nan "^2.10.0"
+
 cliss@0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/cliss/-/cliss-0.0.2.tgz#aa8bd77af7df3cb93b9ea963c1c49a0773c52a3a"
@@ -297,7 +303,7 @@ mz@^2.7.0:
     object-assign "^4.0.1"
     thenify-all "^1.0.0"
 
-nan@^2.4.0:
+nan@^2.10.0, nan@^2.4.0:
   version "2.10.0"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.10.0.tgz#96d0cd610ebd58d4b4de9cc0c6828cda99c7548f"
 
@@ -498,6 +504,12 @@ table-layout@^0.4.2:
     lodash.padend "^4.6.1"
     typical "^2.6.1"
     wordwrapjs "^3.0.0"
+
+text2png@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/text2png/-/text2png-1.1.1.tgz#58b6c3425073c9b1a032cf50952183eeeb3c76ec"
+  dependencies:
+    canvas "^1.6.9"
 
 thenify-all@^1.0.0:
   version "1.6.0"

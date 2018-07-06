@@ -1,10 +1,19 @@
 const fs = require('fs')
-const parser = require('./messages')
 const steggy = require('steggy')
+const text2png = require('text2png')
 
-const messageFeed = fs.readFileSync('./messages.txt', 'utf8')
- 
-const original = fs.readFileSync('/Users/jkriss/Desktop/listen-up.png') // buffer
+const messageFeed = fs.readFileSync('../route.earth/nuvuv/for-babab.txt', 'utf8')
+
+const canvas = text2png('nuvuv -> babab 2018-07-06', {
+  font: '80px Helvetica',
+  textColor: 'black',
+  bgColor: 'white',
+  lineSpacing: 10,
+  padding: 20
+});
+
+const original = canvas
+// const original = fs.readFileSync('/Users/jkriss/Desktop/listen-up.png') // buffer
 const message = messageFeed
  
 // encoding should be supplied if message is provided as a string in non-default encoding

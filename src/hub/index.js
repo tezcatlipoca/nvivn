@@ -73,7 +73,12 @@ class Hub {
   }
 
   async importMessages(messagesString) {
-    messagesString.split("\n").forEach(async m => {
+    const stats = {
+      processed: 0,
+      imported: 0
+    }
+    const promises = messagesString.split("\n").map(async m => {
+      stats.processed++
       const { meta } = messages.parse(m)
       if (meta && meta.hash) {
         const exists = await this.messageExists(meta.hash)
@@ -81,7 +86,11 @@ class Hub {
         if (exists) return
       }
       this.createMessage(m, { sign: false })
+      stats.imported++
     })
+    await Promise.all(promises)
+    console.log("import stats:", stats)
+    return stats
   }
 
   createMessage(messageString, opts={ sign: true }) {

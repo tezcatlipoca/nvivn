@@ -9,9 +9,10 @@ const config = require('./config')
 const pretty = require('./pretty-oyaml')
 const oyaml = require('oyaml')
 const fs = require('fs')
+const path = require('path')
 require('colors')
-
 const FileHub = require('./hub/file')
+const image = require('./image')
 
 const hubConfig = config.loadLocalConfig()
 const userConfig = config.loadUserConfig()
@@ -83,7 +84,12 @@ module.exports.messagesFor = function(hubId, since, outFile) {
     .then(() => {
       const allMessages = messages.join("\n")
       if (outFile) {
-        fs.writeFileSync(outFile, allMessages)
+        const suffix = path.extname(outFile)
+        if (suffix === '.png') {
+          fs.writeFileSync(outFile, image.encode(allMessages, `for ${hubId} ${new Date().toISOString().split('T')[0]}`))
+        } else {
+          fs.writeFileSync(outFile, allMessages)
+        }
         console.log("wrote to", outFile)
       } else {
         console.log(allMessages)
@@ -92,8 +98,26 @@ module.exports.messagesFor = function(hubId, since, outFile) {
 }
 
 module.exports.import = function(inFile) {
-  const messages = fs.readFileSync(inFile, 'utf8')
+  const suffix = path.extname(inFile)
+  console.log("importing file of type", suffix)
+  let messages
+  if (suffix === '.png') {
+    messages = image.decode(fs.readFileSync(inFile))
+  } else {
+    messages = fs.readFileSync(inFile, 'utf8')
+  }
   hub.importMessages(messages)
+}
+
+module.exports.inspect = function(inFile) {
+  const suffix = path.extname(inFile)
+  let messages
+  if (suffix === '.png') {
+    messages = image.decode(fs.readFileSync(inFile))
+  } else {
+    messages = fs.readFileSync(inFile, 'utf8')
+  }
+  console.log(messages)
 }
 
 module.exports.showMessages = function(opts={}) {
