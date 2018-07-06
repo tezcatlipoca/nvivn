@@ -144,7 +144,7 @@ class Hub {
         }
         onMessage(message, { signedBy, warnings })
       }
-    })
+    }, { reverse: opts.reverse })
   }
 
   async scanHubs() {

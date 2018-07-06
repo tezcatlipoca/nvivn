@@ -4,6 +4,7 @@ const fs = require('fs')
 const readline = require('readline')
 const FileSync = require('lowdb/adapters/FileSync')
 const readLastLines = require('read-last-lines')
+const backwardsStream = require('fs-backwards-stream')
 const oyaml = require('oyaml')
 
 class FileHub extends Hub {
@@ -31,11 +32,11 @@ class FileHub extends Hub {
     return new Promise(resolve => {
       this.scanLines(this.hubProfileFile, line => {
         if (line.includes(`id:${id}`)) resolve(true)
-      }).then(() => resolve(false))
+      }, { reverse: true }).then(() => resolve(false))
     })
   }
-  scanLines(filepath, lineFn) {
-    const inStream = fs.createReadStream(filepath)
+  scanLines(filepath, lineFn, opts={}) {
+    const inStream = opts.reverse ? backwardsStream(filepath) : fs.createReadStream(filepath)
     const rl = readline.createInterface(inStream)
     rl.on('line', lineFn)
     return new Promise(resolve => {
