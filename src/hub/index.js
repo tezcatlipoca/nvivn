@@ -154,11 +154,17 @@ class Hub {
     }, ({ body }) => body.type === 'hub-profile', { validate: true })
   }
 
+  seenSince(route, since, hubId) {
+    if (!hubId) hubId = this.hubId
+    const receivedTime = timestamp.parse(route.find(r => r.id === hubId).t, { raw: true })
+    return (!since || receivedTime > since) ? receivedTime : false
+  }
+
   async scanPeople(since) {
     return this.showMessages(({ body: { id, publicKeys }, meta: { route, hash } }) => {
-      const receivedTime = timestamp.parse(route.find(r => r.id === this.hubId).t, { raw: true })
-      if (since && receivedTime <= since) return
-      console.log(oyaml.stringify({ seen:receivedTime, id, publicKeys, hash }))
+      const receivedTimeIfNew = this.seenSince(route, since)
+      if (!receivedTimeIfNew) return
+      console.log(oyaml.stringify({ seen:receivedTimeIfNew, id, publicKeys, hash }))
     }, ({ body }) => (body.type === 'person-profile' && body.from === this.hubId), { validate: true })
   }
 
