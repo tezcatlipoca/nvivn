@@ -53,3 +53,7 @@ module.exports.scanHubs = function() {
   hub.scanHubs()
   return 'done'
 }
+
+module.exports.showMessages = function(filter) {
+  hub.showMessages(({ rawBody }) => console.log(rawBody), filter)
+}

@@ -89,6 +89,23 @@ class Hub {
     return verify(message, this.getPublicKeys)
   }
 
+  showMessages(onMessage, filter=null) {
+    let filterFn = filter
+    if (filter === null || filter === true) filterFn = () => true
+    if (typeof filter === 'string') filter = oyaml.parse(filter)
+    // console.log("filter is", filter, typeof filter)
+    if (typeof filter === 'object') filterFn = ({ body }) => {
+      for (let k in filter) {
+        // console.log("checking", k, body[k], filter[k])
+        if (body[k] !== filter[k]) return false
+      }
+      return true
+    }
+    this.scanMessages(message => {
+      if (filterFn(message)) onMessage(message)
+    })
+  }
+
   async scanHubs() {
     return this.scanMessages(message => {
       const { body, meta } = message
