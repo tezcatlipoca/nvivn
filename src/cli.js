@@ -61,6 +61,10 @@ module.exports.scanPeople = function(since) {
   return 'done'
 }
 
+module.exports.profileExists = function(id) {
+  hub.profileExists(id).then(result => console.log(`Does ${id} exist?`, result))
+}
+
 module.exports.showMessages = function(opts={}) {
   if (typeof opts === 'string') opts = oyaml.parse(opts)
   const { body, meta, notRouted } = opts

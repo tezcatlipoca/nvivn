@@ -25,15 +25,25 @@ class FileHub extends Hub {
         return lastLine.seen
       })
   }
-  async scanMessages(lineFn) {
-    const inStream = fs.createReadStream(this.messageFile)
+  profileExists(id) {
+    return new Promise(resolve => {
+      this.scanLines(this.hubProfileFile, line => {
+        if (line.includes(`id:${id}`)) resolve(true)
+      }).then(() => resolve(false))
+    })
+  }
+  scanLines(filepath, lineFn) {
+    const inStream = fs.createReadStream(filepath)
     const rl = readline.createInterface(inStream)
-    rl.on('line', line => {
+    rl.on('line', lineFn)
+    return new Promise(resolve => {
+      rl.on('close', () => resolve())
+    })
+  }
+  scanMessages(lineFn) {
+    return this.scanLines(this.messageFile, line => {
       const m = messages.parse(line)
       lineFn(m)
-    })
-    return new Promise(({ resolve, reject }) => {
-      rl.on('end', () => resolve())
     })
   }
 }
