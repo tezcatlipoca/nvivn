@@ -281,9 +281,9 @@ os-homedir@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/os-homedir/-/os-homedir-1.0.2.tgz#ffbc4988336e0e833de0c168c7ef152121aa7fb3"
 
-oyaml@^0.0.6:
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.0.6.tgz#bdc9e9b7ac1b522ec74c550e5c251e1461cbb8cf"
+oyaml@^0.0.7:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.0.7.tgz#b7658f15e07a24984a5e1cf7ccab8a6a6a4d7d95"
 
 p-limit@^1.1.0:
   version "1.3.0"

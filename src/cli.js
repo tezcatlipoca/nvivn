@@ -5,6 +5,7 @@ require('magicli')()
 const messages = require('./messages')
 const signing = require('./signing')
 const config = require('./config')
+const pretty = require('./pretty-oyaml')
 
 const FileHub = require('./hub/file')
 
@@ -15,20 +16,15 @@ const hub = new FileHub(hubConfig)
 module.exports.createHub = function(geo) {
   const opts = {}
   if (geo) opts.geo = geo
-  const { id, keys, message } = hub.createHub(opts)
-  console.log("new id:", id)
-  console.log("public key:", keys.publicKey)
-  console.log("secret key:", keys.secretKey)
-  return 'done'
+  const { config } = hub.createHub(opts)
+  return pretty(config)
 }
 
 module.exports.createPerson = function(geo) {
   const opts = {}
   if (geo) opts.geo = geo
-  const { id, keys, message } = hub.createPerson(opts)
-  console.log("new id:", id)
-  console.log("secret key:", keys.secretKey)
-  return 'done'
+  const { config } = hub.createPerson(opts)
+  return pretty(config)
 }
 
 module.exports.createMessage = function(message, secretKey, id) {

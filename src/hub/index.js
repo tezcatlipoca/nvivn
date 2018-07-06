@@ -2,23 +2,40 @@ const proquint = require('proquint')
 const crypto = require('crypto')
 const bs58 = require('bs58')
 const signatures = require('sodium-signatures')
+const low = require('lowdb')
+const Memory = require('lowdb/adapters/Memory')
+const oyaml = require('oyaml')
 const timestamp = require('../timestamp')
 const { sign, verify } = require('../signing')
 const messages = require('../messages')
+const labelValue = require('../label-value')
 
 class Hub {
   constructor(config) {
-    if (!config || !config.hubId || !config.publicKey || !config.secretKey) {
-      throw new Error("Must provide hubId, publicKey, and secretKey")
+    if (!config || !config.id || !config.publicKey || !config.secretKey) {
+      throw new Error("Must provide id, publicKey, and secretKey")
     }
     this.config = config
-    this.hubId = config.hubId
-    this.hubIdBuffer = proquint.decode(config.hubId)
+    this.hubId = config.id
+    this.hubIdBuffer = proquint.decode(this.hubId)
+    this.trustedKeys = config.trustedKeys || {}
     this.getPublicKeys = this.getPublicKeys.bind(this)
+
+    this.db = low(config.adapter || new Memory())
+    this.db.defaults({ hubs: {} })
+      .write()
   }
 
   getPublicKeys(id) {
-    return id === this.config.hubId ? [this.config.publicKey] : null
+    const trustedKeys = this.trustedKeys[id] || []
+    const hub = this.db.get('hubs').get(id).value()
+    const hubKeys = hub ? hub.publicKeys : []
+    const allKeys = trustedKeys.concat(hubKeys)
+    return id === this.hubId ? allKeys.concat([this.config.publicKey]) : allKeys
+  }
+
+  getTrustedKeys() {
+    return Object.assign({}, this.trustedKeys, { [this.hubId]: this.getPublicKeys(this.hubId) })
   }
 
   createPerson(opts={}) {
@@ -53,7 +70,8 @@ class Hub {
     return {
       id,
       keys,
-      message: messages.stringify({ body: announceMessage, meta})
+      message: messages.stringify({ body: announceMessage, meta}),
+      config: oyaml.stringify(Object.assign({ id }, keys, { trustedKeys: this.getTrustedKeys() }))
     }
   }
 
@@ -71,20 +89,30 @@ class Hub {
     return verify(message, this.getPublicKeys)
   }
 
-}
-
-if (require.main === module) {
-  require('dotenv').config()
-  const hub = new Hub({ hubId: process.env.HUB_ID, publicKey: process.env.HUB_PUBLIC_KEY, secretKey: process.env.HUB_SECRET_KEY })
-  const { id, keys, message } = hub.createHub({ geo: "San Francisco <9q8ywpy>" })
-  // const { id, keys, message } = hub.createHub()
-  // const { id, keys, message } = hub.createPerson()
-  console.log("new id:", id)
-  console.log("secret key:", keys.secretKey)
-  console.log(`announce message:\n${message}`)
-
-  const verified = hub.verifyMessage(message)
-  console.log("verified?", verified)
+  async scanHubs() {
+    return this.scanMessages(message => {
+      const { body, meta } = message
+      if (body.type === 'hub-profile') {
+        const verificationResult = verify(message, this.getPublicKeys)
+        if (verificationResult.verified) {
+          const timeValue = parseInt(labelValue.getValue(body.t))
+          // only update the hub info if the timestamp of this message is newer
+          const h = this.db.get('hubs').get(body.id).value()
+          if (h && h.t >= timeValue) {
+            console.log("Already have newer (or latest) record for", body.id)
+          } else {
+            const hubData = { id: body.id, publicKeys: body.publicKeys, t: timeValue, message: line }
+            if (body.geo) hubData.geo = labelValue.getValue(body.geo)
+            this.db.get('hubs')
+            .set(body.id, hubData)
+            .write()
+          }
+        } else {
+          console.error(`Message from ${body.id} didn't pass verification`, verificationResult)
+        }
+      }
+    })
+  }
 
 }
 
