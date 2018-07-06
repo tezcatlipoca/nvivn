@@ -157,14 +157,23 @@ class Hub {
   seenSince(route, since, hubId) {
     if (!hubId) hubId = this.hubId
     const receivedTime = timestamp.parse(route.find(r => r.id === hubId).t, { raw: true })
-    return (!since || receivedTime > since) ? receivedTime : false
+    return (typeof since === 'undefined' || receivedTime > since) ? receivedTime : false
   }
 
   async scanPeople(since) {
+
+    if (typeof since === 'undefined') {
+      if (this.lastProfileSync) {
+        since = await this.lastProfileSync()
+      }
+    }
+
     return this.showMessages(({ body: { id, publicKeys }, meta: { route, hash } }) => {
       const receivedTimeIfNew = this.seenSince(route, since)
       if (!receivedTimeIfNew) return
-      console.log(oyaml.stringify({ seen:receivedTimeIfNew, id, publicKeys, hash }))
+      const profileString = oyaml.stringify({ seen:receivedTimeIfNew, id, publicKeys, hash })
+      console.log(profileString)
+      if (this.writeProfile) this.writeProfile(profileString)
     }, ({ body }) => (body.type === 'person-profile' && body.from === this.hubId), { validate: true })
   }
 

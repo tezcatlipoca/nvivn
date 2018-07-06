@@ -57,7 +57,7 @@ module.exports.scanHubs = function() {
 }
 
 module.exports.scanPeople = function(since) {
-  hub.scanPeople(parseInt(since))
+  hub.scanPeople(typeof since === 'undefined' ? since : parseInt(since))
   return 'done'
 }
 
