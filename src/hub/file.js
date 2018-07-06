@@ -9,8 +9,8 @@ const oyaml = require('oyaml')
 class FileHub extends Hub {
   constructor(opts) {
     super(Object.assign({}, opts, { adapter: new FileSync('data/db.json') }))
-    this.messageFile = 'data/messages.txt'
-    this.hubProfileFile = 'data/people.txt'
+    this.messageFile = `data/${this.hubId}-messages.txt`
+    this.hubProfileFile = `data/${this.hubId}-people.txt`
   }
   writeMessage(message) {
     fs.appendFile(this.messageFile, message + "\n", () => {})
@@ -19,8 +19,10 @@ class FileHub extends Hub {
     fs.appendFile(this.hubProfileFile, profile + "\n", () => {})
   }
   lastProfileSync() {
+    if (!fs.existsSync(this.hubProfileFile)) return 0
     return readLastLines.read(this.hubProfileFile, 1)
       .then(line => {
+        if (line.trim() === '') return 0
         const lastLine = oyaml.parse(line)
         return lastLine.seen
       })

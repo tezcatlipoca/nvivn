@@ -7,7 +7,8 @@ const signing = require('./signing')
 const config = require('./config')
 const pretty = require('./pretty-oyaml')
 const oyaml = require('oyaml')
-const colors = require('colors')
+const fs = require('fs')
+require('colors')
 
 const FileHub = require('./hub/file')
 
@@ -63,6 +64,27 @@ module.exports.scanPeople = function(since) {
 
 module.exports.profileExists = function(id) {
   hub.profileExists(id).then(result => console.log(`Does ${id} exist?`, result))
+}
+
+module.exports.messagesFor = function(hubId, since, outFile) {
+  const sinceArg = typeof since === 'undefined' ? since : parseInt(since)
+  // hub.messagesFor(hubId, sinceArg, ({ rawBody, rawMeta }) => console.log(`${rawBody} | ${rawMeta }`))
+  const messages = []
+  hub.messagesFor(hubId, sinceArg, ({ rawBody, rawMeta }) => messages.push(`${rawBody} | ${rawMeta }`))
+    .then(() => {
+      const allMessages = messages.join("\n")
+      if (outFile) {
+        fs.writeFileSync(outFile, allMessages)
+        console.log("wrote to", outFile)
+      } else {
+        console.log(allMessages)
+      }
+    })
+}
+
+module.exports.import = function(inFile) {
+  const messages = fs.readFileSync(inFile, 'utf8')
+  hub.importMessages(messages)
 }
 
 module.exports.showMessages = function(opts={}) {

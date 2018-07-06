@@ -69,19 +69,28 @@ class Hub {
     }
   }
 
-  createMessage(messageString) {
+  importMessages(messagesString) {
+    messagesString.split("\n").forEach(m => this.createMessage(m, { sign: false }))
+  }
+
+  createMessage(messageString, opts={ sign: true }) {
     const { body, meta = {} } = messages.parse(messageString)
     const now = timestamp.now()
-    meta.route = [{ id: this.hubId, t: now}]
-    if (!meta.signed) meta.signed = []
-    meta.signed.push({ id: this.hubId, signature: sign(body, this.config.secretKey) })
-    // create a hash based on the message body and this first route hub and timestamp
-    const hash = crypto.createHash(this.hashAlgorithm)
-    hash.update(messageString)
-    hash.update(this.hubId)
-    hash.update(now)
-    // meta.hash = `${this.hashAlgorithm}-${bs58.encode(hash.digest())}`
-    meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
+    if (!meta.route) meta.route = []
+    meta.route.push({ id: this.hubId, t: now })
+    if (opts.sign) {
+      if (!meta.signed) meta.signed = []
+      meta.signed.push({ id: this.hubId, signature: sign(body, this.config.secretKey) })  
+    }
+    if (!meta.hash) {
+      // create a hash based on the message body and this first route hub and timestamp
+      const hash = crypto.createHash(this.hashAlgorithm)
+      hash.update(messageString)
+      hash.update(this.hubId)
+      hash.update(now)
+      // meta.hash = `${this.hashAlgorithm}-${bs58.encode(hash.digest())}`
+      meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
+    }
     const message = messages.stringify({ body, meta })
     if (this.writeMessage) this.writeMessage(message)
     return message
@@ -93,9 +102,10 @@ class Hub {
 
   showMessages(onMessage, filter=null, opts={}) {
     let filterFn = filter
-    if (filter === null || filter === true) filterFn = () => true
+    if (filter === null || filter === true) {
+      filterFn = () => true
     // if (typeof filter === 'string') filter = oyaml.parse(filter)
-    if (typeof filter === 'string') {
+    } else if (typeof filter === 'string') {
       let filterString
       try {
         filterString = oyaml.parse(filter)
@@ -106,7 +116,7 @@ class Hub {
     } else if (typeof filter === 'object') {
       filterFn = createFilter(filter)
     }
-    this.scanMessages(message => {
+    return this.scanMessages(message => {
       if (filterFn(message)) {
         let signedBy = []
         let warnings = []
@@ -156,8 +166,21 @@ class Hub {
 
   seenSince(route, since, hubId) {
     if (!hubId) hubId = this.hubId
-    const receivedTime = timestamp.parse(route.find(r => r.id === hubId).t, { raw: true })
+    const hubRoute = route.find(r => r.id === hubId)
+    if (!hubRoute) return false
+    const receivedTime = timestamp.parse(hubRoute.t, { raw: true })
     return (typeof since === 'undefined' || receivedTime > since) ? receivedTime : false
+  }
+
+  messagesFor(hubId, since, onMessage) {
+    return this.showMessages(m => {
+      const otherHubSeenAlready = this.seenSince(m.meta.route, since, hubId)
+      if (otherHubSeenAlready) return
+      const receivedTimeIfNew = this.seenSince(m.meta.route, since)
+      // console.log("seen time for", hubId, receivedTimeIfNew, "pass it along?", !!receivedTimeIfNew)
+      if (!receivedTimeIfNew) return
+      onMessage(m)
+    })
   }
 
   async scanPeople(since) {
