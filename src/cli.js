@@ -63,8 +63,8 @@ module.exports.scanPeople = function(since) {
   return 'done'
 }
 
-module.exports.profileExists = function(id) {
-  hub.profileExists(id).then(result => console.log(`Does ${id} exist?`, result))
+module.exports.profile = function(id) {
+  hub.getProfile(id).then(result => console.log(result))
 }
 
 module.exports.messageExists = function(hash) {

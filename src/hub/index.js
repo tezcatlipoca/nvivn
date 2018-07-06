@@ -29,16 +29,18 @@ class Hub {
       .write()
   }
 
-  getPublicKeys(id) {
+  async getPublicKeys(id) {
     const trustedKeys = this.trustedKeys[id] || []
     const hub = this.db.get('hubs').get(id).value()
     const hubKeys = hub ? hub.publicKeys : []
-    const allKeys = trustedKeys.concat(hubKeys)
+    const profile = await this.getProfile(id)
+    const profileKeys = profile ? profile.publicKeys : []
+    const allKeys = trustedKeys.concat(hubKeys, profileKeys)
     return id === this.hubId ? allKeys.concat([this.config.publicKey]) : allKeys
   }
 
-  getTrustedKeys() {
-    return Object.assign({}, this.trustedKeys, { [this.hubId]: this.getPublicKeys(this.hubId) })
+  async getTrustedKeys() {
+    return Object.assign({}, this.trustedKeys, { [this.hubId]: await this.getPublicKeys(this.hubId) })
   }
 
   createPerson(opts={}) {
@@ -141,18 +143,20 @@ class Hub {
     } else if (typeof filter === 'object') {
       filterFn = createFilter(filter)
     }
-    return this.scanMessages(message => {
+    return this.scanMessages(async message => {
       if (filterFn(message)) {
         let signedBy = []
         let warnings = []
         let signedBySender = false
+        let senderKeyNotAvailable = true
         if (opts.validate) {
           if (!message.body.from) warnings.push("no 'from' field")
-          const validationResult = this.verifyMessage(message)
+          const validationResult = await this.verifyMessage(message)
           if (!validationResult.verified) {
             console.error(`message ${message.meta.hash} didn't pass validation`)
             return
           }
+          senderKeyNotAvailable = typeof validationResult.details[message.body.from] === 'undefined'
           for (let id in validationResult.details) {
             if (validationResult.details[id] === true) {
               let signedLabel = id
@@ -163,7 +167,9 @@ class Hub {
               signedBy.push(signedLabel)
             }
           }
-          if (!signedBySender) {
+          if (message.body.from && senderKeyNotAvailable) {
+            warnings.push("sender key not available")
+          } else if (!signedBySender) {
             warnings.push("not signed by sender")
           }
         }

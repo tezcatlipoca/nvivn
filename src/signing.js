@@ -9,14 +9,14 @@ const sign = function(message, secretKey) {
   return signature.toString('base64')
 }
 
-const verify = function(inputMessage, getPublicKey) {
+const verify = async function(inputMessage, getPublicKey) {
   const message = typeof inputMessage === 'string' ? messages.parse(inputMessage, { parseBody: false }) : inputMessage
   const sigResults = {}
   const bodyBuffer = new Buffer(message.rawBody)
   let anyVerified = false
   if (message.meta && message.meta.signed) {
-    message.meta.signed.forEach(({ id, signature }) => {
-      let pubKeys = getPublicKey(id)
+    const promises = message.meta.signed.map(async ({ id, signature }) => {
+      let pubKeys = await getPublicKey(id)
       // console.log("got pub keys", pubKeys)
       if (!Array.isArray(pubKeys)) pubKeys = [pubKeys]
       if (pubKeys && pubKeys.length > 0) {
@@ -31,6 +31,7 @@ const verify = function(inputMessage, getPublicKey) {
         sigResults[id] = undefined
       }
     })  
+    await Promise.all(promises)
   }
   return {
     verified: anyVerified,

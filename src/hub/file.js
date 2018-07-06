@@ -28,10 +28,11 @@ class FileHub extends Hub {
         return lastLine.seen
       })
   }
-  profileExists(id) {
+  getProfile(id) {
+    if (!fs.existsSync(this.hubProfileFile)) return false
     return new Promise(resolve => {
       this.scanLines(this.hubProfileFile, line => {
-        if (line.includes(`id:${id}`)) resolve(true)
+        if (line.includes(`id:${id}`)) resolve(oyaml.parse(line))
       }, { reverse: true }).then(() => resolve(false))
     })
   }
