@@ -56,6 +56,11 @@ module.exports.scanHubs = function() {
   return 'done'
 }
 
+module.exports.scanPeople = function() {
+  hub.scanPeople()
+  return 'done'
+}
+
 module.exports.showMessages = function(opts={}) {
   if (typeof opts === 'string') opts = oyaml.parse(opts)
   const { body, meta, notRouted } = opts

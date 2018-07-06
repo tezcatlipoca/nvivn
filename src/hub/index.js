@@ -41,15 +41,11 @@ class Hub {
   }
 
   createPerson(opts={}) {
-    const personResult = this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), 'person', opts)
-    if (this.writeMessage) this.writeMessage(personResult.message)
-    return personResult
+    return this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), 'person', opts)
   }
 
   createHub(opts={}) {
-    const hubResult = this.createProfile(crypto.randomBytes(2), 'hub', opts)
-    if (this.writeMessage) this.writeMessage(hubResult.message)
-    return hubResult
+    return this.createProfile(crypto.randomBytes(2), 'hub', opts)
   }
 
   createProfile(idBuffer, type, opts={}) {
@@ -63,16 +59,12 @@ class Hub {
   
     const t = timestamp.now()
     const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
-    const meta = {
-      route: [{ id: this.hubId, t: timestamp.now()}],
-      signed: [
-        { id: this.hubId, signature: sign(announceMessage, this.config.secretKey) }
-      ]
-    }
+    const message = this.createMessage(oyaml.stringify(announceMessage))
+    
     return {
       id,
       keys,
-      message: messages.stringify({ body: announceMessage, meta}),
+      message,
       config: oyaml.stringify(Object.assign({ id }, keys, { trustedKeys: this.getTrustedKeys() }))
     }
   }
@@ -115,54 +107,60 @@ class Hub {
       filterFn = createFilter(filter)
     }
     this.scanMessages(message => {
-      let signedBy = []
-      let warnings = []
-      let signedBySender = false
-      if (opts.validate) {
-        if (!message.body.from) warnings.push("no 'from' field")
-        const validationResult = this.verifyMessage(message)
-        // if (!validationResult.verified) return
-        for (let id in validationResult.details) {
-          if (validationResult.details[id] === true) {
-            let signedLabel = id
-            if (message.body.from && message.body.from === id) {
-              signedLabel += " (sender)"
-              signedBySender = true
+      if (filterFn(message)) {
+        let signedBy = []
+        let warnings = []
+        let signedBySender = false
+        if (opts.validate) {
+          if (!message.body.from) warnings.push("no 'from' field")
+          const validationResult = this.verifyMessage(message)
+          if (!validationResult.verified) {
+            console.error(`message ${message.meta.hash} didn't pass validation`)
+            return
+          }
+          for (let id in validationResult.details) {
+            if (validationResult.details[id] === true) {
+              let signedLabel = id
+              if (message.body.from && message.body.from === id) {
+                signedLabel += " (sender)"
+                signedBySender = true
+              }
+              signedBy.push(signedLabel)
             }
-            signedBy.push(signedLabel)
+          }
+          if (!signedBySender) {
+            warnings.push("not signed by sender")
           }
         }
-        if (!signedBySender) {
-          warnings.push("not signed by sender")
-        }
+        onMessage(message, { signedBy, warnings })
       }
-      if (filterFn(message)) onMessage(message, { signedBy, warnings })
     })
   }
 
   async scanHubs() {
-    return this.scanMessages(message => {
-      const { body, meta } = message
-      if (body.type === 'hub-profile') {
-        const verificationResult = verify(message, this.getPublicKeys)
-        if (verificationResult.verified) {
-          const timeValue = parseInt(labelValue.getValue(body.t))
-          // only update the hub info if the timestamp of this message is newer
-          const h = this.db.get('hubs').get(body.id).value()
-          if (h && h.t >= timeValue) {
-            console.log("Already have newer (or latest) record for", body.id)
-          } else {
-            const hubData = { id: body.id, publicKeys: body.publicKeys, t: timeValue, message: line }
-            if (body.geo) hubData.geo = labelValue.getValue(body.geo)
-            this.db.get('hubs')
-            .set(body.id, hubData)
-            .write()
-          }
-        } else {
-          console.error(`Message from ${body.id} didn't pass verification`, verificationResult)
-        }
+    return this.showMessages(({ body }) => {
+      const timeValue = parseInt(labelValue.getValue(body.t))
+      // only update the hub info if the timestamp of this message is newer
+      const h = this.db.get('hubs').get(body.id).value()
+      if (h && h.t >= timeValue) {
+        console.log("Already have newer (or latest) record for", body.id)
+      } else {
+        const hubData = { id: body.id, publicKeys: body.publicKeys, t: timeValue, message: line }
+        if (body.geo) hubData.geo = labelValue.getValue(body.geo)
+        this.db.get('hubs')
+          .set(body.id, hubData)
+          .write()
       }
-    })
+    }, ({ body }) => body.type === 'hub-profile', { validate: true })
+  }
+
+  async scanPeople() {
+    return this.showMessages(({ body: { id, publicKeys, t }, meta: { route, hash } }) => {
+      const timeValue = parseInt(labelValue.getValue(t))
+      const receivedTimeString = route.find(r => r.id === this.hubId).t
+      const receivedTimeValue = parseInt(labelValue.getValue(receivedTimeString))
+      console.log(oyaml.stringify({ t:timeValue, seen:receivedTimeValue, id, publicKeys, hash }))
+    }, ({ body }) => (body.type === 'person-profile' && body.from === this.hubId), { validate: true })
   }
 
 }
