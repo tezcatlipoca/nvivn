@@ -56,8 +56,8 @@ module.exports.scanHubs = function() {
   return 'done'
 }
 
-module.exports.scanPeople = function() {
-  hub.scanPeople()
+module.exports.scanPeople = function(since) {
+  hub.scanPeople(parseInt(since))
   return 'done'
 }
 
