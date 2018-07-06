@@ -101,10 +101,6 @@ deepmerge@^2.0.0:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-2.1.1.tgz#e862b4e45ea0555072bf51e7fd0d9845170ae768"
 
-dotenv@^6.0.0:
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-6.0.0.tgz#24e37c041741c5f4b25324958ebbc34bca965935"
-
 find-up@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/find-up/-/find-up-2.1.0.tgz#45d1b7e506c717ddd482775a2b77920a3c0c57a7"
@@ -281,6 +277,10 @@ object-to-arguments@0.0.8:
     stringify-parameters "0.0.4"
     unpack-string "0.0.2"
 
+os-homedir@^1.0.0:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/os-homedir/-/os-homedir-1.0.2.tgz#ffbc4988336e0e833de0c168c7ef152121aa7fb3"
+
 oyaml@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.0.6.tgz#bdc9e9b7ac1b522ec74c550e5c251e1461cbb8cf"
@@ -456,6 +456,12 @@ use@^3.1.0:
   resolved "https://registry.yarnpkg.com/use/-/use-3.1.0.tgz#14716bf03fdfefd03040aef58d8b4b85f3a7c544"
   dependencies:
     kind-of "^6.0.2"
+
+user-home@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/user-home/-/user-home-2.0.0.tgz#9c70bfd8169bc1dcbf48604e0f04b8b49cde9e9f"
+  dependencies:
+    os-homedir "^1.0.0"
 
 wordwrapjs@^3.0.0:
   version "3.0.0"

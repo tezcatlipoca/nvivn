@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
 require('magicli')()
-const path = require('path')
-require('dotenv').config({ path: path.resolve(process.cwd(), '.hub') })
 
 const messages = require('./messages')
 const signing = require('./signing')
+const config = require('./config')
 
 const FileHub = require('./hub/file')
 
-const hub = new FileHub({ hubId: process.env.ID, publicKey: process.env.PUBLIC_KEY, secretKey: process.env.SECRET_KEY })
+const hubConfig = config.loadLocalConfig()
+const userConfig = config.loadUserConfig()
+const hub = new FileHub(hubConfig)
 
 module.exports.createHub = function(geo) {
   const opts = {}
@@ -32,7 +33,8 @@ module.exports.createPerson = function(geo) {
 
 module.exports.createMessage = function(message, secretKey, id) {
   const { body } = messages.parse(message)
-  if (!id) id = body.from
+  if (!id) id = body.from || userConfig.id
+  if (!secretKey) secretKey = userConfig.secretKey
   if (id && secretKey) {
     meta = {
       signed: [ { id, signature: signing.sign(message, secretKey) }]
