@@ -60,5 +60,5 @@ module.exports.showMessages = function(opts={}) {
   if (typeof opts === 'string') opts = oyaml.parse(opts)
   const { body, meta, notRouted } = opts
   const { validate } = opts
-  hub.showMessages(({ rawBody, rawMeta }, { signedBy }) => console.log(`${rawBody}${opts.showMeta ? ` | ${rawMeta}`.gray : ''} ${signedBy.join(" ").green}`), { body, meta, notRouted }, { validate })
+  hub.showMessages(({ rawBody, rawMeta }, { signedBy, warnings }) => console.log(`${rawBody}${opts.showMeta ? ` | ${rawMeta}`.gray : ''} ${signedBy.join(", ").green} ${warnings.join(", ").red}`), { body, meta, notRouted }, { validate })
 }

@@ -21,6 +21,7 @@ class Hub {
     this.hubIdBuffer = proquint.decode(this.hubId)
     this.trustedKeys = config.trustedKeys || {}
     this.getPublicKeys = this.getPublicKeys.bind(this)
+    this.hashAlgorithm = 'sha256'
 
     this.db = low(config.adapter || new Memory())
     this.db.defaults({ hubs: {} })
@@ -78,9 +79,17 @@ class Hub {
 
   createMessage(messageString) {
     const { body, meta = {} } = messages.parse(messageString)
-    meta.route = [{ id: this.hubId, t: timestamp.now()}]
+    const now = timestamp.now()
+    meta.route = [{ id: this.hubId, t: now}]
     if (!meta.signed) meta.signed = []
     meta.signed.push({ id: this.hubId, signature: sign(body, this.config.secretKey) })
+    // create a hash based on the message body and this first route hub and timestamp
+    const hash = crypto.createHash(this.hashAlgorithm)
+    hash.update(messageString)
+    hash.update(this.hubId)
+    hash.update(now)
+    // meta.hash = `${this.hashAlgorithm}-${bs58.encode(hash.digest())}`
+    meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
     const message = messages.stringify({ body, meta })
     if (this.writeMessage) this.writeMessage(message)
     return message
@@ -107,14 +116,27 @@ class Hub {
     }
     this.scanMessages(message => {
       let signedBy = []
+      let warnings = []
+      let signedBySender = false
       if (opts.validate) {
+        if (!message.body.from) warnings.push("no 'from' field")
         const validationResult = this.verifyMessage(message)
         // if (!validationResult.verified) return
         for (let id in validationResult.details) {
-          if (validationResult.details[id] === true) signedBy.push(id)
+          if (validationResult.details[id] === true) {
+            let signedLabel = id
+            if (message.body.from && message.body.from === id) {
+              signedLabel += " (sender)"
+              signedBySender = true
+            }
+            signedBy.push(signedLabel)
+          }
+        }
+        if (!signedBySender) {
+          warnings.push("not signed by sender")
         }
       }
-      if (filterFn(message)) onMessage(message, { signedBy })
+      if (filterFn(message)) onMessage(message, { signedBy, warnings })
     })
   }
 
