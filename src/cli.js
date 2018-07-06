@@ -30,8 +30,9 @@ module.exports.createPerson = function(geo) {
   return 'done'
 }
 
-module.exports.createMessage = function(message, id, secretKey) {
-  console.log("handling message", message)
+module.exports.createMessage = function(message, secretKey, id) {
+  const { body } = messages.parse(message)
+  if (!id) id = body.from
   if (id && secretKey) {
     meta = {
       signed: [ { id, signature: signing.sign(message, secretKey) }]
