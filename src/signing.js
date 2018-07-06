@@ -14,22 +14,24 @@ const verify = function(inputMessage, getPublicKey) {
   const sigResults = {}
   const bodyBuffer = new Buffer(message.rawBody)
   let anyVerified = false
-  message.meta.signed.forEach(({ id, signature }) => {
-    let pubKeys = getPublicKey(id)
-    // console.log("got pub keys", pubKeys)
-    if (!Array.isArray(pubKeys)) pubKeys = [pubKeys]
-    if (pubKeys && pubKeys.length > 0) {
-      pubKeys.forEach(pubKey => {
-        // console.log("checking public key:", pubKey)
-        if (sigResults[id] === true) return
-        const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
-        sigResults[id] = verificationResult
-        if (verificationResult) anyVerified = true  
-      })
-    } else {
-      sigResults[id] = undefined
-    }
-  })
+  if (message.meta && message.meta.signed) {
+    message.meta.signed.forEach(({ id, signature }) => {
+      let pubKeys = getPublicKey(id)
+      // console.log("got pub keys", pubKeys)
+      if (!Array.isArray(pubKeys)) pubKeys = [pubKeys]
+      if (pubKeys && pubKeys.length > 0) {
+        pubKeys.forEach(pubKey => {
+          // console.log("checking public key:", pubKey)
+          if (sigResults[id] === true) return
+          const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
+          sigResults[id] = verificationResult
+          if (verificationResult) anyVerified = true  
+        })
+      } else {
+        sigResults[id] = undefined
+      }
+    })  
+  }
   return {
     verified: anyVerified,
     details: sigResults

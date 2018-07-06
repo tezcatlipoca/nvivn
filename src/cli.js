@@ -6,6 +6,7 @@ const messages = require('./messages')
 const signing = require('./signing')
 const config = require('./config')
 const pretty = require('./pretty-oyaml')
+const oyaml = require('oyaml')
 const colors = require('colors')
 
 const FileHub = require('./hub/file')
@@ -55,6 +56,9 @@ module.exports.scanHubs = function() {
   return 'done'
 }
 
-module.exports.showMessages = function(filter) {
-  hub.showMessages(({ rawBody, rawMeta }) => console.log(`${rawBody} ${`| ${rawMeta}`.gray}`), filter)
+module.exports.showMessages = function(opts={}) {
+  if (typeof opts === 'string') opts = oyaml.parse(opts)
+  const { body, meta, notRouted } = opts
+  const { validate } = opts
+  hub.showMessages(({ rawBody, rawMeta }, { signedBy }) => console.log(`${rawBody}${opts.showMeta ? ` | ${rawMeta}`.gray : ''} ${signedBy.join(" ").green}`), { body, meta, notRouted }, { validate })
 }

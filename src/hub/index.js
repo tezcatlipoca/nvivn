@@ -90,27 +90,31 @@ class Hub {
     return verify(message, this.getPublicKeys)
   }
 
-  showMessages(onMessage, filter=null) {
+  showMessages(onMessage, filter=null, opts={}) {
     let filterFn = filter
     if (filter === null || filter === true) filterFn = () => true
     // if (typeof filter === 'string') filter = oyaml.parse(filter)
-    let filterString
-    try {
-      filterString = oyaml.parse(filter)
-    } catch (err) {
-      filterString = { body: filter }
+    if (typeof filter === 'string') {
+      let filterString
+      try {
+        filterString = oyaml.parse(filter)
+      } catch (err) {
+        filterString = { body: filter }
+      }
+      filterFn = createFilter(filterString)
+    } else if (typeof filter === 'object') {
+      filterFn = createFilter(filter)
     }
-    if (typeof filter === 'string') filterFn = createFilter(filterString)
-    // console.log("filter is", filter, typeof filter)
-    // if (typeof filter === 'object') filterFn = ({ body }) => {
-    //   for (let k in filter) {
-    //     // console.log("checking", k, body[k], filter[k])
-    //     if (body[k] !== filter[k]) return false
-    //   }
-    //   return true
-    // }
     this.scanMessages(message => {
-      if (filterFn(message)) onMessage(message)
+      let signedBy = []
+      if (opts.validate) {
+        const validationResult = this.verifyMessage(message)
+        // if (!validationResult.verified) return
+        for (let id in validationResult.details) {
+          if (validationResult.details[id] === true) signedBy.push(id)
+        }
+      }
+      if (filterFn(message)) onMessage(message, { signedBy })
     })
   }
 
