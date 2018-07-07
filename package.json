@@ -6,6 +6,9 @@
   "bin": {
     "route-earth": "bin/magicli.js"
   },
+  "scripts": {
+    "web": "poi src/web/index.js"
+  },
   "dependencies": {
     "base32-encoding": "^1.0.0",
     "bs58": "^4.0.1",
@@ -27,5 +30,9 @@
     "steggy": "^2.0.1",
     "text2png": "^1.1.1",
     "user-home": "^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0-beta.52",
+    "poi": "^10.2.9"
   }
 }

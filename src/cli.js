@@ -76,7 +76,7 @@ module.exports.messageExists = function(hash) {
   })
 }
 
-module.exports.messagesFor = function(hubId, since, outFile) {
+module.exports.messagesFor = function(hubId, since, outFile, password) {
   const sinceArg = typeof since === 'undefined' ? since : parseInt(since)
   // hub.messagesFor(hubId, sinceArg, ({ rawBody, rawMeta }) => console.log(`${rawBody} | ${rawMeta }`))
   const messages = []
@@ -86,7 +86,7 @@ module.exports.messagesFor = function(hubId, since, outFile) {
       if (outFile) {
         const suffix = path.extname(outFile)
         if (suffix === '.png') {
-          fs.writeFileSync(outFile, image.encode(allMessages, `for ${hubId} ${new Date().toISOString().split('T')[0]}`))
+          fs.writeFileSync(outFile, image.encode(allMessages, `for ${hubId} ${new Date().toISOString().split('T')[0]}`, password))
         } else {
           fs.writeFileSync(outFile, allMessages)
         }
@@ -97,23 +97,23 @@ module.exports.messagesFor = function(hubId, since, outFile) {
     })
 }
 
-module.exports.import = function(inFile) {
+module.exports.import = function(inFile, password) {
   const suffix = path.extname(inFile)
   console.log("importing file of type", suffix)
   let messages
   if (suffix === '.png') {
-    messages = image.decode(fs.readFileSync(inFile))
+    messages = image.decode(fs.readFileSync(inFile), password)
   } else {
     messages = fs.readFileSync(inFile, 'utf8')
   }
   hub.importMessages(messages)
 }
 
-module.exports.inspect = function(inFile) {
+module.exports.inspect = function(inFile, password) {
   const suffix = path.extname(inFile)
   let messages
   if (suffix === '.png') {
-    messages = image.decode(fs.readFileSync(inFile))
+    messages = image.decode(fs.readFileSync(inFile), password)
   } else {
     messages = fs.readFileSync(inFile, 'utf8')
   }

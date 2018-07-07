@@ -6,7 +6,8 @@ const messages = require('./messages')
 const sign = function(message, secretKey) {
   const messageString = typeof message === 'string' ? message : oyaml.stringify(message)
   const signature = signatures.sign(new Buffer(messageString), bs58.decode(secretKey))
-  return signature.toString('base64')
+  // return signature.toString('base64')
+  return bs58.encode(signature)
 }
 
 const verify = async function(inputMessage, getPublicKey) {
@@ -23,7 +24,9 @@ const verify = async function(inputMessage, getPublicKey) {
         pubKeys.forEach(pubKey => {
           // console.log("checking public key:", pubKey)
           if (sigResults[id] === true) return
-          const verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), bs58.decode(pubKey))
+          const pubKeyBuffer = bs58.decode(pubKey)
+          let verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), pubKeyBuffer)
+          if (!verificationResult) verificationResult = signatures.verify(bodyBuffer, bs58.decode(signature), pubKeyBuffer)
           sigResults[id] = verificationResult
           if (verificationResult) anyVerified = true  
         })
