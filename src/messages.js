@@ -2,7 +2,7 @@ const oyaml = require('oyaml')
 
 const parse = function(messageString, opts={}) {
   const result = {}
-  const [body, meta] = messageString.split("|").map(s => s && s.trim())
+  const [body, meta] = oyaml.parts(messageString)
   result.rawBody = body
   if (opts.parseBody !== false) result.body = oyaml.parse(body)
   if (meta) {
@@ -14,7 +14,9 @@ const parse = function(messageString, opts={}) {
 
 const stringify = function({ body, meta }) {
   if (!body) throw new Error("Must provide body")
-  return `${typeof body === 'string' ? body : oyaml.stringify(body)} | ${oyaml.stringify(meta)}`
+  let parts = [body]
+  if (meta) parts.push(meta)
+  return typeof body === 'string' ? body : oyaml.stringify(parts)
 }
 
 module.exports = {

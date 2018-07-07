@@ -51,7 +51,7 @@ class Hub {
     return this.createProfile(crypto.randomBytes(2), 'hub', opts)
   }
 
-  createProfile(idBuffer, type, opts={}) {
+  async createProfile(idBuffer, type, opts={}) {
     const id = proquint.encode(idBuffer)
   
     const keyPair = signatures.keyPair()
@@ -63,12 +63,12 @@ class Hub {
     const t = timestamp.now()
     const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
     const message = this.createMessage(oyaml.stringify(announceMessage))
-    
+    const trustedKeys = await this.getTrustedKeys()
     return {
       id,
       keys,
       message,
-      config: oyaml.stringify(Object.assign({ id }, keys, { trustedKeys: this.getTrustedKeys() }))
+      config: oyaml.stringify(Object.assign({ id }, keys, { trustedKeys }))
     }
   }
 

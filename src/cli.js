@@ -19,24 +19,24 @@ const bs58 = require('bs58')
 const hubConfig = config.loadLocalConfig()
 const userConfig = config.loadUserConfig()
 
+let hub
 try {
-  const hub = new FileHub(hubConfig)
+  hub = new FileHub(hubConfig)
 } catch (err) {
-
+  console.log("hub config:", hubConfig)
+  console.error(err)
 }
 
 module.exports.createHub = function(geo) {
   const opts = {}
   if (geo) opts.geo = geo
-  const { config } = hub.createHub(opts)
-  return pretty(config)
+  hub.createHub(opts).then(({ config }) => pretty(config))
 }
 
 module.exports.createPerson = function(geo) {
   const opts = {}
   if (geo) opts.geo = geo
-  const { config } = hub.createPerson(opts)
-  return pretty(config)
+  hub.createPerson(opts).then(({config}) => pretty(config))
 }
 
 module.exports.createMessage = function(message, secretKey, id) {

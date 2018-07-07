@@ -24,7 +24,7 @@
     "lowdb": "^1.0.0",
     "magicli": "^0.1.2",
     "ngeohash": "^0.6.0",
-    "oyaml": "^0.0.7",
+    "oyaml": "^0.1.1",
     "proquint": "^0.0.1",
     "read-last-lines": "^1.5.0",
     "sodium-signatures": "^2.1.1",
