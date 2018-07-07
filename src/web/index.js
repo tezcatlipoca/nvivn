@@ -1,3 +1,4 @@
+const localforage = require('localforage')
 const steggy = require('steggy')
 const geohash = require('ngeohash')
 const L = require('leaflet/dist/leaflet')
@@ -8,6 +9,7 @@ document.getElementById('app').innerHTML = `
 #map { height: 400px; width:500px; max-width:100%}
 </style>
 <input type="file" id="files">
+<img id="messages-image" style="display:block; height:50px"></img>
 <pre id="messages"></pre>
 <button id="get-location">Get location</button>
 <input type="text" id="location"></a>
@@ -25,9 +27,7 @@ function handleFileSelect(evt) {
     fr.onload = function () {
       var ab = fr.result
       var buffer = Buffer.from( new Uint8Array(ab) )
-      // console.log("array buffer:", ab)
-      // const buffer = arrayBufferToBuffer(ab)
-      // console.log("buffer:", buffer)
+      localforage.setItem('messagesImage', ab)
       var messages = steggy.reveal()(buffer, 'utf8')
       console.log("messages:", messages)
       document.getElementById('messages').innerText = messages
@@ -66,6 +66,7 @@ function plotGeohash(hash) {
   map.fitBounds(boundingPolygon.getBounds())
   console.log("geohash:", hash)
   locationInput.value = hash
+  localforage.setItem('geohash', hash)
 }
 
 function getLocation(evt) {
@@ -103,3 +104,10 @@ map.addLayer(OpenMapSurfer_Roads);
 document.getElementById('files').addEventListener('change', handleFileSelect, false);
 locationInput.addEventListener('keyup', changeHash);
 document.getElementById('get-location').addEventListener('click', getLocation);
+localforage.getItem('geohash').then(hash => hash && plotGeohash(hash))
+localforage.getItem('messagesImage').then(imageData => {
+  if (imageData) {
+    const blob = new Blob([imageData])
+    document.getElementById('messages-image').src = window.URL.createObjectURL(blob)
+  }
+})
