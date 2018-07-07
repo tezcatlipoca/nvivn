@@ -7,7 +7,6 @@ const loadConfig = function(configPath) {
   try {
     return oyaml.parse(fs.readFileSync(configPath, 'utf8'))
   } catch (err) {
-    console.error(err)
     return {}
   }
 }

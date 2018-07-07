@@ -13,10 +13,17 @@ const path = require('path')
 require('colors')
 const FileHub = require('./hub/file')
 const image = require('./image')
+const crypto = require('crypto')
+const bs58 = require('bs58')
 
 const hubConfig = config.loadLocalConfig()
 const userConfig = config.loadUserConfig()
-const hub = new FileHub(hubConfig)
+
+try {
+  const hub = new FileHub(hubConfig)
+} catch (err) {
+
+}
 
 module.exports.createHub = function(geo) {
   const opts = {}
@@ -118,6 +125,16 @@ module.exports.inspect = function(inFile, password) {
     messages = fs.readFileSync(inFile, 'utf8')
   }
   console.log(messages)
+}
+
+module.exports.configImage = function(outFile, password) {
+  let printPassword = false
+  if (!password) {
+    password = bs58.encode(crypto.randomBytes(12))
+    printPassword = true
+  }
+  fs.writeFileSync(outFile, image.encode(oyaml.stringify(userConfig), userConfig.id, password))
+  if (printPassword) console.log("password:", password)
 }
 
 module.exports.showMessages = function(opts={}) {
