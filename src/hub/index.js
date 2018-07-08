@@ -33,6 +33,7 @@ class Hub {
   }
 
   async command(cmdString) {
+    const start = Date.now()
     // debug('running command', cmdString)
     const [cmd, ...rest] = oyaml.parse(cmdString, { array: true })
     // debug('first part', cmd, 'rest', rest)
@@ -70,6 +71,8 @@ class Hub {
     } else {
       throw new Error(`${operation} is not a known command`)
     }
+    const duration = Date.now() - start
+    debug(`processed request in ${duration}ms`)
     return results.join("\n")
   }
 
