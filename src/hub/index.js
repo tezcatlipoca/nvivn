@@ -57,10 +57,13 @@ class Hub {
     } else if (operation === 'create-hub') {
       const { config } = await this.createHub(opts)
       results.push(oyaml.stringify(config))
+    } else if (operation === 'profile') {
+      const profile = await this.getProfile(opts.id)
+      debug("got profile", profile)
+      if (profile) results.push(oyaml.stringify(profile))
     } else {
       throw new Error(`${operation} is not a known command`)
     }
-
     return results.join("\n")
   }
 
@@ -143,8 +146,8 @@ class Hub {
       hash.update(messageString)
       hash.update(meta.route[0].id)
       hash.update(labelValue.getValue(meta.route[0].t))
-      // meta.hash = `${this.hashAlgorithm}-${bs58.encode(hash.digest())}`
-      meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
+      meta.hash = `${this.hashAlgorithm}-${bs58.encode(hash.digest())}`
+      // meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
     }
     const message = messages.stringify({ body, meta })
     if (this.writeMessage) this.writeMessage(message)

@@ -31,7 +31,8 @@ hub.command(cmd).then(lines => {
   if (lines === '') return
   lines.split("\n").forEach(line => {
     const [response, meta] = oyaml.parts(line)
-    const output = [colorize(oyaml.parse(response))]
+    const parsedResponse = oyaml.parse(response)
+    const output = (typeof parsedResponse === 'string') ? [colorize(parsedResponse)] : [line]
     if (meta && argv.showMeta) output.push(meta.yellow)
     console.log(output.join("\n"))
   })

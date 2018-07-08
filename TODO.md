@@ -4,3 +4,4 @@
 - make sure line by line scans are ending on match(?)
 - add request signing to the cli
 - lock down access to server tasks (scanHubs, scanPeople)
+- simplify scanning code by using new showMessages options
