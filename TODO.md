@@ -1,4 +1,6 @@
 - index person profiles in the hub's namespace
 - don't allow assignment of already assigned hub ids
 - don't allow assignment of already assigned person ids
-- make sure line by line scans are ending on match
+- make sure line by line scans are ending on match(?)
+- add request signing to the cli
+- lock down access to server tasks (scanHubs, scanPeople)

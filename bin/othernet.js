@@ -24,7 +24,7 @@ debug('opts', argv)
 
 const colorize = function(oyamlString) {
   const [main, ...rest] = oyaml.parts(oyamlString)
-  return `${main} ${'|'.gray} ${rest.join(' | ').gray}`
+  return `${main} ${rest.length > 0 ? '|'.gray : ''} ${rest.join(' | ').gray}`
 }
 
 hub.command(cmd).then(lines => {
@@ -35,4 +35,4 @@ hub.command(cmd).then(lines => {
     if (meta && argv.showMeta) output.push(meta.yellow)
     console.log(output.join("\n"))
   })
-})
+}).catch(err => console.error(err))

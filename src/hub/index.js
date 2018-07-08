@@ -40,15 +40,25 @@ class Hub {
     debug('first part', cmd, 'rest', rest)
 
     const results = []
+    const operation = cmd.cmd
+    delete cmd.cmd
+    const opts = cmd
 
-    if (cmd.cmd === 'messages') {
+    if (operation === 'messages') {
       debug('running messages command')
-      delete cmd.cmd
       await this.showMessages((m, info) => {
         const parts = [m.original]
         if (info && Object.keys(info).length > 0) parts.push(info)
         results.push(oyaml.stringify(parts))
-      }, cmd)
+      }, Object.assign({ validate: true }, opts))
+    } else if (operation === 'create-person') {
+      const { config } = await this.createPerson(opts)
+      results.push(oyaml.stringify(config))
+    } else if (operation === 'create-hub') {
+      const { config } = await this.createHub(opts)
+      results.push(oyaml.stringify(config))
+    } else {
+      throw new Error(`${operation} is not a known command`)
     }
 
     return results.join("\n")
@@ -242,24 +252,24 @@ class Hub {
     }, ({ body }) => body.type === 'hub-profile', { validate: true })
   }
 
-  seenSince(route, since, hubId) {
-    if (!hubId) hubId = this.hubId
-    const hubRoute = route.find(r => r.id === hubId)
-    if (!hubRoute) return false
-    const receivedTime = timestamp.parse(hubRoute.t, { raw: true })
-    return (typeof since === 'undefined' || receivedTime > since) ? receivedTime : false
-  }
+  // seenSince(route, since, hubId) {
+  //   if (!hubId) hubId = this.hubId
+  //   const hubRoute = route.find(r => r.id === hubId)
+  //   if (!hubRoute) return false
+  //   const receivedTime = timestamp.parse(hubRoute.t, { raw: true })
+  //   return (typeof since === 'undefined' || receivedTime > since) ? receivedTime : false
+  // }
 
-  messagesFor(hubId, since, onMessage) {
-    return this.showMessages(m => {
-      const otherHubSeenAlready = this.seenSince(m.meta.route, since, hubId)
-      if (otherHubSeenAlready) return
-      const receivedTimeIfNew = this.seenSince(m.meta.route, since)
-      // console.log("seen time for", hubId, receivedTimeIfNew, "pass it along?", !!receivedTimeIfNew)
-      if (!receivedTimeIfNew) return
-      onMessage(m)
-    })
-  }
+  // messagesFor(hubId, since, onMessage) {
+  //   return this.showMessages(m => {
+  //     const otherHubSeenAlready = this.seenSince(m.meta.route, since, hubId)
+  //     if (otherHubSeenAlready) return
+  //     const receivedTimeIfNew = this.seenSince(m.meta.route, since)
+  //     // console.log("seen time for", hubId, receivedTimeIfNew, "pass it along?", !!receivedTimeIfNew)
+  //     if (!receivedTimeIfNew) return
+  //     onMessage(m)
+  //   })
+  // }
 
   async scanPeople(since) {
 

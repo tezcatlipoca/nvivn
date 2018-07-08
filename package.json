@@ -26,7 +26,7 @@
     "mingo": "^2.2.2",
     "minimist": "^1.2.0",
     "ngeohash": "^0.6.0",
-    "oyaml": "^0.1.2",
+    "oyaml": "^0.1.4",
     "proquint": "^0.0.1",
     "read-last-lines": "^1.5.0",
     "sodium-signatures": "^2.1.1",
