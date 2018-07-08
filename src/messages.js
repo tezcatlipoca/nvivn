@@ -1,7 +1,7 @@
 const oyaml = require('oyaml')
 
 const parse = function(messageString, opts={}) {
-  const result = {}
+  const result = { original: messageString }
   const [body, meta] = oyaml.parts(messageString)
   result.rawBody = body
   if (opts.parseBody !== false) result.body = oyaml.parse(body)

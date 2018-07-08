@@ -6,6 +6,7 @@ const FileSync = require('lowdb/adapters/FileSync')
 const readLastLines = require('read-last-lines')
 const backwardsStream = require('fs-backwards-stream')
 const oyaml = require('oyaml')
+require('colors')
 
 class FileHub extends Hub {
   constructor(opts) {

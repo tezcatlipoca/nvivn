@@ -1,3 +1,4 @@
+const debug = require('debug')('othernet:hub')
 const proquint = require('proquint')
 const crypto = require('crypto')
 const bs58 = require('bs58')
@@ -27,6 +28,27 @@ class Hub {
     this.db = low(config.adapter || new Memory())
     this.db.defaults({ hubs: {} })
       .write()
+  }
+
+  async command(cmdString) {
+    debug('running command', cmdString)
+    let input = oyaml.parse(cmdString)
+    if (!Array.isArray(input)) input = [input]
+    const [cmd, ...rest] = input
+    debug('first part', cmd, 'rest', rest)
+
+    const results = []
+
+    if (cmd.cmd === 'messages') {
+      debug('running messages command')
+      await this.showMessages((m, info) => {
+        const parts = [m.original]
+        if (info && Object.keys(info).length > 0) parts.push(info)
+        results.push(oyaml.stringify(parts))
+      }, cmd)
+    }
+
+    return results.join("\n")
   }
 
   async getPublicKeys(id) {
@@ -136,21 +158,23 @@ class Hub {
     })
   }
 
-  showMessages(onMessage, filter=null, opts={}) {
-    let filterFn = filter
-    if (filter === null || filter === true) {
+  showMessages(onMessage, opts={}) {
+    debug("opts:", opts)
+    let filterFn = opts.filter
+    if (filterFn === null || filterFn === true || typeof filterFn === 'undefined') {
       filterFn = () => true
     // if (typeof filter === 'string') filter = oyaml.parse(filter)
-    } else if (typeof filter === 'string') {
-      let filterString
-      try {
-        filterString = oyaml.parse(filter)
-      } catch (err) {
-        filterString = { body: filter }
-      }
-      filterFn = createFilter(filterString)
-    } else if (typeof filter === 'object') {
-      filterFn = createFilter(filter)
+    } else if (typeof filterFn === 'string') {
+      // let filterString
+      // try {
+      //   filterString = oyaml.parse(filterFn)
+      // } catch (err) {
+      //   filterString = { body: filterFn }
+      // }
+      // debug("filter string:", filterString)
+      filterFn = createFilter(filterFn)
+    } else if (typeof filterFn === 'object') {
+      filterFn = createFilter(filterFn)
     }
     return this.scanMessages(async message => {
       if (filterFn(message)) {
@@ -182,7 +206,10 @@ class Hub {
             warnings.push("not signed by sender")
           }
         }
-        onMessage(message, { signedBy, warnings })
+        const info = {}
+        if (signedBy.length > 0) info.signedBy = signedBy
+        if (warnings.length > 0) info.warnings = warnings
+        onMessage(message, info)
       }
     }, { reverse: opts.reverse })
   }

@@ -4,7 +4,8 @@
   "main": "src/cli.js",
   "author": "Jesse Kriss <jesse@jklabs.net>",
   "bin": {
-    "route-earth": "bin/magicli.js"
+    "route-earth": "bin/magicli.js",
+    "othernet": "bin/othernet.js"
   },
   "scripts": {
     "web": "poi src/web/index.js"
