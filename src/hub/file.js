@@ -37,12 +37,15 @@ class FileHub extends Hub {
       }, { reverse: true }).then(() => resolve(false))
     })
   }
-  scanLines(filepath, lineFn, opts={}) {
+  async scanLines(filepath, lineFn, opts={}) {
     const inStream = opts.reverse ? backwardsStream(filepath) : fs.createReadStream(filepath)
     const rl = readline.createInterface(inStream)
-    rl.on('line', lineFn)
+    const promises = []
+    rl.on('line', async (line) => {
+      promises.push(lineFn(line))
+    })
     return new Promise(resolve => {
-      rl.on('close', () => resolve())
+      rl.on('close', async () => await Promise.all(promises) && resolve())
     })
   }
 }

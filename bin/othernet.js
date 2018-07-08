@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const minimist = require('minimist')
 const debug = require('debug')('othernet:cli')
 const config = require('../src/config')
 const FileHub = require('../src/hub/file')
@@ -11,21 +12,27 @@ const userConfig = config.loadUserConfig()
 
 const hub = new FileHub(hubConfig)
 
-const argv = process.argv.slice(2)
-const cmd = argv.join(' ')
+const argv = minimist(process.argv.slice(2), {
+  boolean: 'showMeta',
+  alias: {
+    showMeta: ['m']
+  }
+})
+const cmd = argv._.join(' ')
+
+debug('opts', argv)
 
 const colorize = function(oyamlString) {
   const [main, ...rest] = oyaml.parts(oyamlString)
   return `${main} ${'|'.gray} ${rest.join(' | ').gray}`
 }
 
-const cmdOpts = oyaml.parse(oyaml.parts(cmd)[0])
 hub.command(cmd).then(lines => {
-  if (lines === '') return console.error("(no output)")
+  if (lines === '') return
   lines.split("\n").forEach(line => {
     const [response, meta] = oyaml.parts(line)
     const output = [colorize(oyaml.parse(response))]
-    if (meta && cmdOpts.showMeta) output.push(meta.yellow)
+    if (meta && argv.showMeta) output.push(meta.yellow)
     console.log(output.join("\n"))
   })
 })

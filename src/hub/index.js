@@ -155,19 +155,22 @@ class Hub {
   }
 
   scanMessages(lineFn) {
-    return this.scanLines(this.messageFile, line => {
+    return this.scanLines(this.messageFile, async line => {
       const m = messages.parse(line)
-      lineFn(m)
+      await lineFn(m)
     })
   }
 
   showMessages(onMessage, opts={}) {
+    debug('showing messages', opts)
     let since = opts.since
     if (typeof since === 'string') {
       since = Math.floor(datemath(since) / 1000)
       debug("since is now", since)
     }
     delete opts.since
+    const validate = opts.validate
+    delete opts.validate
     debug("remaining opts (treating as filter):", opts)
     let filterFn = opts
     if (filterFn === null || filterFn === true || typeof filterFn === 'undefined') {
@@ -188,9 +191,11 @@ class Hub {
         let warnings = []
         let signedBySender = false
         let senderKeyNotAvailable = true
-        if (opts.validate) {
+        if (validate) {
+          // debug("validating...")
           if (!message.body.from) warnings.push("no 'from' field")
           const validationResult = await this.verifyMessage(message)
+          // debug("validation result:", validationResult)
           if (!validationResult.verified) {
             console.error(`message ${message.meta.hash} didn't pass validation`)
             return

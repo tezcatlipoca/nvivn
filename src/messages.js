@@ -1,3 +1,4 @@
+const debug = require('debug')('othernet:messages')
 const oyaml = require('oyaml')
 
 const parse = function(messageString, opts={}) {
