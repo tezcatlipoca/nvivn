@@ -6,12 +6,14 @@ const signatures = require('sodium-signatures')
 const low = require('lowdb')
 const Memory = require('lowdb/adapters/Memory')
 const oyaml = require('oyaml')
+const datemath = require('datemath-parser').parse
 const escapeStringRegexp = require('escape-string-regexp')
 const timestamp = require('../timestamp')
 const { sign, verify } = require('../signing')
 const messages = require('../messages')
 const labelValue = require('../label-value')
 const createFilter = require('../filters')
+
 
 class Hub {
   constructor(config) {
@@ -41,6 +43,7 @@ class Hub {
 
     if (cmd.cmd === 'messages') {
       debug('running messages command')
+      delete cmd.cmd
       await this.showMessages((m, info) => {
         const parts = [m.original]
         if (info && Object.keys(info).length > 0) parts.push(info)
@@ -159,25 +162,28 @@ class Hub {
   }
 
   showMessages(onMessage, opts={}) {
-    debug("opts:", opts)
-    let filterFn = opts.filter
+    let since = opts.since
+    if (typeof since === 'string') {
+      since = Math.floor(datemath(since) / 1000)
+      debug("since is now", since)
+    }
+    delete opts.since
+    debug("remaining opts (treating as filter):", opts)
+    let filterFn = opts
     if (filterFn === null || filterFn === true || typeof filterFn === 'undefined') {
       filterFn = () => true
-    // if (typeof filter === 'string') filter = oyaml.parse(filter)
     } else if (typeof filterFn === 'string') {
-      // let filterString
-      // try {
-      //   filterString = oyaml.parse(filterFn)
-      // } catch (err) {
-      //   filterString = { body: filterFn }
-      // }
-      // debug("filter string:", filterString)
       filterFn = createFilter(filterFn)
     } else if (typeof filterFn === 'object') {
       filterFn = createFilter(filterFn)
     }
     return this.scanMessages(async message => {
       if (filterFn(message)) {
+        // check route time for this hub, use that to filter based on "since"
+        if (since && message.meta && message.meta.route) {
+          const thisHubRoute = message.meta.route.find(r => r.id === this.hubId)
+          if (thisHubRoute && parseInt(labelValue.getValue(thisHubRoute.t)) <= since) return
+        }
         let signedBy = []
         let warnings = []
         let signedBySender = false

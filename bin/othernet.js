@@ -12,7 +12,7 @@ const userConfig = config.loadUserConfig()
 const hub = new FileHub(hubConfig)
 
 const argv = process.argv.slice(2)
-const cmd = argv[0]
+const cmd = argv.join(' ')
 
 const colorize = function(oyamlString) {
   const [main, ...rest] = oyaml.parts(oyamlString)
