@@ -1,21 +1,25 @@
-const filtrex = require('filtrex')
+const mingo = require('mingo')
 const datemath = require('datemath-parser').parse
 const parseDate = require('./timestamp').parse
 const { getValue } = require('./label-value')
+const oyaml = require('oyaml')
 
-const allowAll = () => 1
+const allowAll = {
+  test: () => true
+}
 
 const customFunctions = { value: getValue, datemath, date: parseDate }
 
 module.exports = function({ body, meta, notRouted }) {
-  const bodyFilter = body ? filtrex(body, customFunctions) : allowAll
-  const metaFilter = meta ? filtrex(meta, customFunctions) : allowAll
+  const bodyQuery = oyaml.parse(body)
+  const metaQuery = meta && oyaml.parse(meta)
+  const bodyFilter = body ? new mingo.Query(bodyQuery) : allowAll
+  const metaFilter = meta ? new mingo.Query(metaQuery) : allowAll
   return ({ body, meta }) => {
-    // console.log("filtering:", body)
-    // console.log("filter result:", bodyFilter(body) === 1 && metaFilter(meta))
+    if (bodyQuery.t && body.t) body = Object.assign({}, body, { t: parseInt(getValue(body.t)), 't.raw': body.t })
     if (notRouted) {
       return !meta || !meta.route || !meta.route.find(r => r.id === notRouted)
     }
-    return bodyFilter(body) === 1 && metaFilter(meta)
+    return bodyFilter.test(body) && metaFilter.test(meta)
   }
 }

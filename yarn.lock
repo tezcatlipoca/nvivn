@@ -2510,10 +2510,6 @@ fill-range@^4.0.0:
     repeat-string "^1.6.1"
     to-regex-range "^2.1.0"
 
-filtrex@^0.5.4:
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/filtrex/-/filtrex-0.5.4.tgz#98075d518f068c4f58b7b589a227d98bd9f6395d"
-
 finalhandler@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/finalhandler/-/finalhandler-1.1.1.tgz#eebf4ed840079c83f4249038c9d703008301b105"
@@ -3847,6 +3843,10 @@ mimic-fn@^1.0.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/mimic-fn/-/mimic-fn-1.2.0.tgz#820c86a39334640e99516928bd03fca88057d022"
 
+mingo@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/mingo/-/mingo-2.2.2.tgz#be69d486ae6e0ac54b979dc5f4412db21851f693"
+
 mini-css-extract-plugin@^0.4.0:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/mini-css-extract-plugin/-/mini-css-extract-plugin-0.4.1.tgz#d2bcf77bb2596b8e4bd9257e43d3f9164c2e86cb"
@@ -4286,9 +4286,9 @@ osenv@^0.1.4:
     os-homedir "^1.0.0"
     os-tmpdir "^1.0.0"
 
-oyaml@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.1.1.tgz#b3536fee3e98f9d23e7d829fdf9e4aad450839f7"
+oyaml@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.1.2.tgz#1757a12d452b96cf601351f575d654897006022d"
 
 p-finally@^1.0.0:
   version "1.0.0"
