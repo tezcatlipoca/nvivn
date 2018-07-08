@@ -4296,9 +4296,9 @@ osenv@^0.1.4:
     os-homedir "^1.0.0"
     os-tmpdir "^1.0.0"
 
-oyaml@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.1.4.tgz#bb6b5588f3451e4a5cf11f37ea4bf8fcbaf02767"
+oyaml@^0.1.5:
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/oyaml/-/oyaml-0.1.5.tgz#261fe5e7bc58169f34969d5050d7cdbbd968e883"
   dependencies:
     flat "^4.1.0"
     strip-ansi "^4.0.0"

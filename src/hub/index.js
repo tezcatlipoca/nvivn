@@ -34,10 +34,10 @@ class Hub {
 
   async command(cmdString) {
     debug('running command', cmdString)
-    let input = oyaml.parse(cmdString)
-    if (!Array.isArray(input)) input = [input]
-    const [cmd, ...rest] = input
+    const [cmd, ...rest] = oyaml.parse(cmdString, { array: true })
     debug('first part', cmd, 'rest', rest)
+    const rawPayload = oyaml.parts(cmdString).slice(1).join(" | ")
+    debug("raw payload:", rawPayload)
 
     const results = []
     const operation = cmd.cmd
@@ -61,6 +61,9 @@ class Hub {
       const profile = await this.getProfile(opts.id)
       debug("got profile", profile)
       if (profile) results.push(oyaml.stringify(profile))
+    } else if (operation === 'create-message') {
+      const message = await this.createMessage(rawPayload)
+      results.push(message)
     } else {
       throw new Error(`${operation} is not a known command`)
     }
