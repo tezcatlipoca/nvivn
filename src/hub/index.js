@@ -33,11 +33,10 @@ class Hub {
   }
 
   async command(cmdString) {
-    debug('running command', cmdString)
+    // debug('running command', cmdString)
     const [cmd, ...rest] = oyaml.parse(cmdString, { array: true })
-    debug('first part', cmd, 'rest', rest)
+    // debug('first part', cmd, 'rest', rest)
     const rawPayload = oyaml.parts(cmdString).slice(1).join(" | ")
-    debug("raw payload:", rawPayload)
 
     const results = []
     const operation = cmd.cmd
@@ -64,6 +63,10 @@ class Hub {
     } else if (operation === 'create-message') {
       const message = await this.createMessage(rawPayload)
       results.push(message)
+    } else if (operation === 'import-messages') {
+      if (!rawPayload || rawPayload.trim() === '') throw new Error("no messages provided")
+      const stats = await this.importMessages(oyaml.parse(rawPayload))
+      results.push(oyaml.stringify(stats))
     } else {
       throw new Error(`${operation} is not a known command`)
     }
@@ -118,12 +121,13 @@ class Hub {
       processed: 0,
       imported: 0
     }
-    const promises = messagesString.split("\n").map(async m => {
+    const promises = messagesString.trim().split("\n").map(async m => {
       stats.processed++
+      debug("processing message", m)
       const { meta } = messages.parse(m)
       if (meta && meta.hash) {
         const exists = await this.messageExists(meta.hash)
-        // console.log(meta.hash, "exists already?", exists)
+        debug(meta.hash, "exists already?", exists)
         if (exists) return
       }
       this.createMessage(m, { sign: false })
@@ -162,7 +166,7 @@ class Hub {
   }
 
   messageExists(hash) {
-    const regex = new RegExp(`\\|.*hash:${escapeStringRegexp(hash)}($|"|\s)`)
+    const regex = new RegExp(`\\|.*hash:${escapeStringRegexp(hash)}($|"|\\s)`)
     return new Promise(resolve => {
       this.scanLines(this.messageFile, line => {
         if (line.match(regex)) resolve(true)

@@ -3,6 +3,7 @@
 const minimist = require('minimist')
 const debug = require('debug')('othernet:cli')
 const oyaml = require('oyaml')
+const fs = require('fs')
 const config = require('../src/config')
 const FileHub = require('../src/hub/file')
 const signing = require('../src/signing')
@@ -29,7 +30,7 @@ const colorize = function(oyamlString) {
 }
 
 const parsedCmd = oyaml.parse(cmd, { array: true })
-const cmdParts = oyaml.parts(cmd)
+let cmdParts = oyaml.parts(cmd)
 
 const signIfPossible = function(payload, { id, secretKey }={}) {
   const body = oyaml.parse(payload)
@@ -44,6 +45,12 @@ const signIfPossible = function(payload, { id, secretKey }={}) {
   } else {
     return payload
   }
+}
+
+if (argv.f) {
+  const payload = fs.readFileSync(argv.f, 'utf8')
+  cmdParts.push(oyaml.stringify(payload))
+  cmd = cmdParts.join(" | ")
 }
 
 if (parsedCmd[0].cmd === 'create-message') {
