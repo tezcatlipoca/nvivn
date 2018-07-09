@@ -57,6 +57,7 @@ class Hub {
           await self.showMessages((m, info) => {
             pushString(m.original)
           }, Object.assign({ validate: true }, args))
+          debug("-- end messages --")
         } else if (op === 'import-messages') {
           debug("-- import messages --")
             result = {

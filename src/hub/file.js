@@ -55,7 +55,7 @@ class FileHub extends Hub {
       })
     })
   }
-  async scanLines(filepath, lineFn, opts={}) {
+  scanLines(filepath, lineFn, opts={}) {
     const inStream = opts.reverse ? backwardsStream(filepath) : fs.createReadStream(filepath).pipe(split2())
     const done = () => {
       debug("-- destroying the stream, done early --")

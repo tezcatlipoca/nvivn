@@ -25,36 +25,44 @@ let cmd = argv._.join(' ')
 
 debug('opts', argv)
 
-const parsedCmd = oyaml.parse(cmd, { array: true })
-let cmdParts = oyaml.parts(cmd)
-
-const signIfPossible = function(payload, { id, secretKey }={}) {
-  const body = oyaml.parse(payload)
-  if (!id) id = body.from || userConfig.id
-  if (!secretKey) secretKey = userConfig.secretKey
-  if (id && secretKey) {
-    const bodyString = oyaml.stringify(body)
-    debug("signing", payload)
-    const meta = {
-      signed: [ { id, signature: signing.sign(payload, secretKey) }]
-    }
-    return [payload, oyaml.stringify(meta)].join(" | ")
-  } else {
-    return payload
-  }
-}
-
-if (parsedCmd[0].op === 'create-message') {
-  const payload = cmdParts[1]
-  cmd = [cmdParts[0], signIfPossible(payload)].join(" | ")
-  debug("cmd now", cmd)
-}
-
-const s = hub.getCommandStream()
-s.write(cmd)
-if (argv.f) {
-  fs.createReadStream(argv.f).pipe(split2()).pipe(s)
+if (argv._[0] === 'server') {
+  const server = require('../src/server')
+  const port = argv.p || 9999
+  server(hub).listen(port, () => {
+    console.log(`server is listening at http://localhost:${port}`)
+  })
 } else {
-  s.end()
+  const parsedCmd = oyaml.parse(cmd, { array: true })
+  let cmdParts = oyaml.parts(cmd)
+  
+  const signIfPossible = function(payload, { id, secretKey }={}) {
+    const body = oyaml.parse(payload)
+    if (!id) id = body.from || userConfig.id
+    if (!secretKey) secretKey = userConfig.secretKey
+    if (id && secretKey) {
+      const bodyString = oyaml.stringify(body)
+      debug("signing", payload)
+      const meta = {
+        signed: [ { id, signature: signing.sign(payload, secretKey) }]
+      }
+      return [payload, oyaml.stringify(meta)].join(" | ")
+    } else {
+      return payload
+    }
+  }
+  
+  if (parsedCmd[0].op === 'create-message') {
+    const payload = cmdParts[1]
+    cmd = [cmdParts[0], signIfPossible(payload)].join(" | ")
+    debug("cmd now", cmd)
+  }
+  
+  const s = hub.getCommandStream()
+  s.write(cmd)
+  if (argv.f) {
+    fs.createReadStream(argv.f).pipe(split2()).pipe(s)
+  } else {
+    s.end()
+  }
+  s.pipe(process.stdout)  
 }
-s.pipe(process.stdout)
