@@ -8,6 +8,8 @@ const Memory = require('lowdb/adapters/Memory')
 const oyaml = require('oyaml')
 const datemath = require('datemath-parser').parse
 const escapeStringRegexp = require('escape-string-regexp')
+const { Duplex } = require('stream')
+const through2 = require('through2')
 const timestamp = require('../timestamp')
 const { sign, verify } = require('../signing')
 const messages = require('../messages')
@@ -32,55 +34,98 @@ class Hub {
       .write()
   }
 
-  async command(cmdString) {
-    const start = Date.now()
-    // debug('running command', cmdString)
-    const [cmd, ...rest] = oyaml.parse(cmdString, { array: true })
-    // debug('first part', cmd, 'rest', rest)
-    const rawPayload = oyaml.parts(cmdString).slice(1).join(" | ")
+  getCommandStream() {
+    const self = this
+    const context = {}
+    let result = {}
+    const commandStream = through2(async function(chunk, encoding, done) {
+      let { cmd, op } = context
+      const pushString = str => this.push(str+"\n")
+      const push = data => pushString(oyaml.stringify(data))
+      if (!cmd) {
+        [cmd] = oyaml.parse(chunk.toString(), { array: true })
+        debug("got", cmd)
+        const op = cmd.op
+        context.op = op
+        delete cmd.op
+        const args = cmd
+        context.cmd = cmd
+        debug("context now:", context)
+        // single line commands
+        if (op === 'messages') {
+          debug("-- messages --")
+          await self.showMessages((m, info) => {
+            pushString(m.original)
+          }, Object.assign({ validate: true }, args))
+        } else if (op === 'import-messages') {
+          debug("-- import messages --")
+            result = {
+              processed: 0,
+              imported: 0
+            }
+        } else if (op === 'create-person') {
+          const { config } = await self.createPerson(args)
+          push(config)
+        } else if (op === 'create-hub') {
+          const { config } = await self.createHub(args)
+          push(config)
+        } else if (op === 'profile') {
+          const profile = await self.getProfile(args.id)
+          debug("got profile", profile, "for", args.id)
+          if (profile) push(profile)
+        } else if (op === 'create-message') {
+          const rawPayload = oyaml.parts(chunk.toString()).slice(1).join(" | ")
+          const message = await self.createMessage(rawPayload)
+          pushString(message)
+        } else if (op === 'scan-people') {
+          await self.scanPeople(args.since)
+        } else if (op === 'scan-hubs') {
+          await self.scanHubs()
+        } else {
+          debug("ignoring command", op)
+          push({ error: `no command '${op}'` })
+          context.cmd = null
+        }
+      } else {
+        // debug("continuing", op, chunk.toString())
+        if (op === 'import-messages') {
+          const m = chunk.toString()
+          debug("processing message", m)
+          const { meta } = messages.parse(m)
+          result.processed++
+          let skip = false
+          if (meta && meta.hash) {
+            const exists = await self.messageExists(meta.hash)
+            debug(meta.hash, "exists already?", exists)
+            if (exists) skip = true
+          }
+          if (!skip) {
+            self.createMessage(m, { sign: false })
+            result.imported++              
+          }
 
-    const results = []
-    const operation = cmd.cmd
-    delete cmd.cmd
-    const opts = cmd
-
-    if (operation === 'messages') {
-      debug('running messages command')
-      await this.showMessages((m, info) => {
-        const parts = [m.original]
-        if (info && Object.keys(info).length > 0) parts.push(info)
-        results.push(oyaml.stringify(parts))
-      }, Object.assign({ validate: true }, opts))
-    } else if (operation === 'create-person') {
-      const { config } = await this.createPerson(opts)
-      results.push(oyaml.stringify(config))
-    } else if (operation === 'create-hub') {
-      const { config } = await this.createHub(opts)
-      results.push(oyaml.stringify(config))
-    } else if (operation === 'profile') {
-      const profile = await this.getProfile(opts.id)
-      debug("got profile", profile)
-      if (profile) results.push(oyaml.stringify(profile))
-    } else if (operation === 'create-message') {
-      const message = await this.createMessage(rawPayload)
-      results.push(message)
-    } else if (operation === 'import-messages') {
-      if (!rawPayload || rawPayload.trim() === '') throw new Error("no messages provided")
-      const stats = await this.importMessages(oyaml.parse(rawPayload))
-      results.push(oyaml.stringify(stats))
-    } else {
-      throw new Error(`${operation} is not a known command`)
-    }
-    const duration = Date.now() - start
-    debug(`processed request in ${duration}ms`)
-    return results.join("\n")
+        }
+      }
+      done()
+    }, function(cb) {
+      debug("-- flushing command stream --")
+      debug("result:", result)
+      // return final result on flush
+      if (Object.keys(result).length > 0) {
+        this.push(oyaml.stringify(result)+"\n")
+      }
+      cb()
+    })
+    return commandStream
   }
 
   async getPublicKeys(id) {
     const trustedKeys = this.trustedKeys[id] || []
     const hub = this.db.get('hubs').get(id).value()
     const hubKeys = hub ? hub.publicKeys : []
+    debug("about to get profile", id)
     const profile = await this.getProfile(id)
+    debug("got profile:", profile)
     const profileKeys = profile ? profile.publicKeys : []
     const allKeys = trustedKeys.concat(hubKeys, profileKeys)
     return id === this.hubId ? allKeys.concat([this.config.publicKey]) : allKeys
@@ -115,30 +160,8 @@ class Hub {
       id,
       keys,
       message,
-      config: oyaml.stringify(Object.assign({ id }, keys, { trustedKeys }))
+      config: Object.assign({ id }, keys, { trustedKeys })
     }
-  }
-
-  async importMessages(messagesString) {
-    const stats = {
-      processed: 0,
-      imported: 0
-    }
-    const promises = messagesString.trim().split("\n").map(async m => {
-      stats.processed++
-      debug("processing message", m)
-      const { meta } = messages.parse(m)
-      if (meta && meta.hash) {
-        const exists = await this.messageExists(meta.hash)
-        debug(meta.hash, "exists already?", exists)
-        if (exists) return
-      }
-      this.createMessage(m, { sign: false })
-      stats.imported++
-    })
-    await Promise.all(promises)
-    console.log("import stats:", stats)
-    return stats
   }
 
   createMessage(messageString, opts={ sign: true }) {
@@ -215,10 +238,10 @@ class Hub {
         let signedBySender = false
         let senderKeyNotAvailable = true
         if (validate) {
-          // debug("validating...")
+          debug("validating...")
           if (!message.body.from) warnings.push("no 'from' field")
           const validationResult = await this.verifyMessage(message)
-          // debug("validation result:", validationResult)
+          debug("validation result:", validationResult)
           if (!validationResult.verified) {
             console.error(`message ${message.meta.hash} didn't pass validation`)
             return
@@ -265,24 +288,13 @@ class Hub {
     }, ({ body }) => body.type === 'hub-profile', { validate: true })
   }
 
-  // seenSince(route, since, hubId) {
-  //   if (!hubId) hubId = this.hubId
-  //   const hubRoute = route.find(r => r.id === hubId)
-  //   if (!hubRoute) return false
-  //   const receivedTime = timestamp.parse(hubRoute.t, { raw: true })
-  //   return (typeof since === 'undefined' || receivedTime > since) ? receivedTime : false
-  // }
-
-  // messagesFor(hubId, since, onMessage) {
-  //   return this.showMessages(m => {
-  //     const otherHubSeenAlready = this.seenSince(m.meta.route, since, hubId)
-  //     if (otherHubSeenAlready) return
-  //     const receivedTimeIfNew = this.seenSince(m.meta.route, since)
-  //     // console.log("seen time for", hubId, receivedTimeIfNew, "pass it along?", !!receivedTimeIfNew)
-  //     if (!receivedTimeIfNew) return
-  //     onMessage(m)
-  //   })
-  // }
+  seenSince(route, since, hubId) {
+    if (!hubId) hubId = this.hubId
+    const hubRoute = route.find(r => r.id === hubId)
+    if (!hubRoute) return false
+    const receivedTime = timestamp.parse(hubRoute.t, { raw: true })
+    return (typeof since === 'undefined' || receivedTime > since) ? receivedTime : false
+  }
 
   async scanPeople(since) {
 
@@ -296,7 +308,7 @@ class Hub {
       const receivedTimeIfNew = this.seenSince(route, since)
       if (!receivedTimeIfNew) return
       const profileString = oyaml.stringify({ seen:receivedTimeIfNew, id, publicKeys, hash })
-      console.log(profileString)
+      // console.log(profileString)
       if (this.writeProfile) this.writeProfile(profileString)
     }, ({ body }) => (body.type === 'person-profile' && body.from === this.hubId), { validate: true })
   }

@@ -4,6 +4,7 @@ const minimist = require('minimist')
 const debug = require('debug')('othernet:cli')
 const oyaml = require('oyaml')
 const fs = require('fs')
+const split2 = require('split2')
 const config = require('../src/config')
 const FileHub = require('../src/hub/file')
 const signing = require('../src/signing')
@@ -24,11 +25,6 @@ let cmd = argv._.join(' ')
 
 debug('opts', argv)
 
-const colorize = function(oyamlString) {
-  const [main, ...rest] = oyaml.parts(oyamlString)
-  return `${main} ${rest.length > 0 ? '|'.gray : ''} ${rest.join(' | ').gray}`
-}
-
 const parsedCmd = oyaml.parse(cmd, { array: true })
 let cmdParts = oyaml.parts(cmd)
 
@@ -38,6 +34,7 @@ const signIfPossible = function(payload, { id, secretKey }={}) {
   if (!secretKey) secretKey = userConfig.secretKey
   if (id && secretKey) {
     const bodyString = oyaml.stringify(body)
+    debug("signing", payload)
     const meta = {
       signed: [ { id, signature: signing.sign(payload, secretKey) }]
     }
@@ -47,25 +44,17 @@ const signIfPossible = function(payload, { id, secretKey }={}) {
   }
 }
 
-if (argv.f) {
-  const payload = fs.readFileSync(argv.f, 'utf8')
-  cmdParts.push(oyaml.stringify(payload))
-  cmd = cmdParts.join(" | ")
-}
-
-if (parsedCmd[0].cmd === 'create-message') {
+if (parsedCmd[0].op === 'create-message') {
   const payload = cmdParts[1]
   cmd = [cmdParts[0], signIfPossible(payload)].join(" | ")
   debug("cmd now", cmd)
 }
 
-hub.command(cmd).then(lines => {
-  if (lines === '') return
-  lines.split("\n").forEach(line => {
-    const [response, meta] = oyaml.parts(line)
-    const parsedResponse = oyaml.parse(response)
-    const output = (typeof parsedResponse === 'string') ? [colorize(parsedResponse)] : [line]
-    if (meta && argv.showMeta) output.push(meta.yellow)
-    console.log(output.join("\n"))
-  })
-}).catch(err => console.error(err))
+const s = hub.getCommandStream()
+s.write(cmd)
+if (argv.f) {
+  fs.createReadStream(argv.f).pipe(split2()).pipe(s)
+} else {
+  s.end()
+}
+s.pipe(process.stdout)

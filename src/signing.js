@@ -1,3 +1,4 @@
+const debug = require('debug')('othernet:signing')
 const signatures = require('sodium-signatures')
 const bs58 = require('bs58')
 const oyaml = require('oyaml')
@@ -18,11 +19,9 @@ const verify = async function(inputMessage, getPublicKey) {
   if (message.meta && message.meta.signed) {
     const promises = message.meta.signed.map(async ({ id, signature }) => {
       let pubKeys = await getPublicKey(id)
-      // console.log("got pub keys", pubKeys)
       if (!Array.isArray(pubKeys)) pubKeys = [pubKeys]
       if (pubKeys && pubKeys.length > 0) {
         pubKeys.forEach(pubKey => {
-          // console.log("checking public key:", pubKey)
           if (sigResults[id] === true) return
           const pubKeyBuffer = bs58.decode(pubKey)
           let verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), pubKeyBuffer)
