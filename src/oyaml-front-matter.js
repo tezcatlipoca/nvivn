@@ -12,34 +12,32 @@ module.exports = function(readStream) {
     let fmLines = []
     let isFrontMatter = false
     let started = false
-    input.on('readable', () => {
-      const line = input.read()
-      console.log("line:", line)
+    let ended = false
+    let body = through2.obj(function(chunk, encoding, callback) {
+      this.push(chunk)
+      callback()
+    })
+    input.on('data', line => {
+      // const line = input.read()
+      if (ended) {
+        if (!line) return body.end()
+        body.write(line)
+        return
+      }
       if (!started) {
         if (line === BOUNDARY) {
           isFrontMatter = true
           started = true
         } else {
           // this isn't a front matter file, return the read buffer and add the first line back in
-          let firstLine = true
-          const body = new Readable({
-            read(size) {
-              if (firstLine) {
-                firstLine = false
-                this.push(line)
-              } else {
-                this.push(input.read(size))
-              }
-            }
-          });
+          body.write(line)
           resolve({ frontMatter: {}, bodyStream: body.pipe(oyamlStream.parse()) })
         }
       } else if (line === BOUNDARY) {
-        // it's over, wrap it up and resolve
+        ended = true
         const frontMatter = oyaml.parse(fmLines.join(' '))
-        resolve({ frontMatter, bodyStream: input.pipe(oyamlStream.parse())})
+        resolve({ frontMatter, bodyStream: body.pipe(oyamlStream.parse()) })
       } else if (isFrontMatter) {
-        // we're in front matter, hold on to it
         fmLines.push(line)
       }
     })
