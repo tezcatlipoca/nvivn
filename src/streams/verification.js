@@ -12,7 +12,6 @@ const verify = async function(parsedMessageObject, getPublicKey) {
   if (meta && meta.signed) {
     const promises = meta.signed.map(async ({ id, signature }) => {
       let pubKeys = await getPublicKey(id)
-      if (!Array.isArray(pubKeys)) pubKeys = [pubKeys]
       if (pubKeys && pubKeys.length > 0) {
         pubKeys.forEach(pubKey => {
           if (sigResults[id] === true) return
