@@ -8,7 +8,6 @@ const Memory = require('lowdb/adapters/Memory')
 const oyaml = require('oyaml')
 const datemath = require('datemath-parser').parse
 const escapeStringRegexp = require('escape-string-regexp')
-const { Duplex } = require('stream')
 const through2 = require('through2')
 const pump = require('pump')
 const timestamp = require('../timestamp')
@@ -66,7 +65,7 @@ class Hub {
         [cmd] = chunk.data
         const op = cmd.op
         delete cmd.op
-        const args = cmd
+        let args = cmd
         context.cmd = cmd
 
         if (op === 'profile') {
@@ -77,11 +76,22 @@ class Hub {
         } else if (op === 'messages') {
           async = true
           let source = self.getMessagesStream({ parts: true, original: true })
-          // TODO add a validation stream here, delete it from args so the filter doesn't get confused
+          const validate = args.validate
+          delete args.validate
           if (Object.keys(args).length > 0) {
-            source = source.pipe(filterStream({ data: args }))
+            let bodyFilter = Object.assign({}, args)
+            const hash = bodyFilter.hash
+            delete bodyFilter.hash
+            let metaFilter = {}
+            if (hash) metaFilter.hash = hash
+            if (Object.keys(bodyFilter).length > 0) {
+              source = source.pipe(filterStream(bodyFilter, obj => obj.data[0]))
+            }
+            if (Object.keys(metaFilter).length > 0) {
+              source = source.pipe(filterStream(metaFilter, obj => obj.data[1]))
+            }
           }
-          if (args.validate !== false) {
+          if (validate !== false) {
             source = source.pipe(verificationStream(self.getPublicKeys))
           }
           source.on('data', obj => {
@@ -95,8 +105,6 @@ class Hub {
       }
 
       if (!async) done()
-      // this.push({ ok: 'cool', input: chunk })
-      // done()
     })
     const input = oyamlStream.parse({ array: true, parts: true })
     const output = input.pipe(commandStream).pipe(oyamlStream.stringify({ quoteSingleString: false })).pipe(newlines())
