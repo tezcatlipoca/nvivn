@@ -57,12 +57,20 @@ if (argv._[0] === 'server') {
     debug("cmd now", cmd)
   }
   
-  const s = hub.getCommandStream()
-  s.write(cmd)
+  // const s = hub.getCommandStream()
+  // s.write(cmd)
+  // if (argv.f) {
+  //   fs.createReadStream(argv.f).pipe(split2()).pipe(s)
+  // } else {
+  //   s.end()
+  // }
+  // s.pipe(process.stdout)  
+  const [input, output] = hub.getCommandStreams()
+  output.pipe(process.stdout)  
+  input.write(cmd)
   if (argv.f) {
-    fs.createReadStream(argv.f).pipe(split2()).pipe(s)
+    fs.createReadStream(argv.f).pipe(split2()).pipe(input)
   } else {
-    s.end()
+    input.end()
   }
-  s.pipe(process.stdout)  
 }

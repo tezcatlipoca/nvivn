@@ -7,6 +7,7 @@ const FileSync = require('lowdb/adapters/FileSync')
 const readLastLines = require('read-last-lines')
 const backwardsStream = require('fs-reverse')
 const oyaml = require('oyaml')
+const oyamlStream = require('../streams/oyaml')
 require('colors')
 
 class FileHub extends Hub {
@@ -30,6 +31,13 @@ class FileHub extends Hub {
         const lastLine = oyaml.parse(line)
         return lastLine.seen
       })
+  }
+  // pass the id in case it's used for partitioning
+  getProfileStream(id) {
+    return backwardsStream(this.hubProfileFile).pipe(oyamlStream.parse())
+  }
+  getMessagesStream(opts) {
+    return fs.createReadStream(this.messageFile).pipe(split2()).pipe(oyamlStream.parse(opts))
   }
   getProfile(id) {
     debug("looking up profile", id)

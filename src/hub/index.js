@@ -10,12 +10,30 @@ const datemath = require('datemath-parser').parse
 const escapeStringRegexp = require('escape-string-regexp')
 const { Duplex } = require('stream')
 const through2 = require('through2')
+const pump = require('pump')
 const timestamp = require('../timestamp')
 const { sign, verify } = require('../signing')
 const messages = require('../messages')
 const labelValue = require('../label-value')
 const createFilter = require('../filters')
+const oyamlStream = require('../streams/oyaml')
+const newlines = require('../streams/newlines')
+const filterStream = require('../streams/filter')
+const verificationStream = require('../streams/verification')
 
+const getFirst = function(...streams) {
+  return new Promise((resolve, reject) => {
+    const s = pump(...streams, (err) => {
+      debug("--- getFirst stream done ---", err)
+      if (err) return reject(err)
+    })
+    s.on('data', result => {
+      debug("--- getFirst got data ---", result)
+      resolve(result)
+      s.destroy()
+    })
+  })
+}
 
 class Hub {
   constructor(config) {
@@ -34,91 +52,142 @@ class Hub {
       .write()
   }
 
-  getCommandStream() {
-    const self = this
+  getCommandStreams() {
     const context = {}
-    let result = {}
-    const commandStream = through2(async function(chunk, encoding, done) {
+    const self = this
+    const commandStream = through2.obj(async function(chunk, encoding, done) {
+      
+      debug("handling input", chunk)
+
       let { cmd, op } = context
-      const pushString = str => this.push(str+"\n")
-      const push = data => pushString(oyaml.stringify(data))
+      let async = false
+
       if (!cmd) {
-        [cmd] = oyaml.parse(chunk.toString(), { array: true })
-        debug("got", cmd)
+        [cmd] = chunk.data
         const op = cmd.op
-        context.op = op
         delete cmd.op
         const args = cmd
         context.cmd = cmd
-        debug("context now:", context)
-        // single line commands
-        if (op === 'messages') {
-          debug("-- messages --")
-          await self.showMessages((m, info) => {
-            pushString(m.original)
-          }, Object.assign({ validate: true }, args))
-          debug("-- end messages --")
-        } else if (op === 'import-messages') {
-          debug("-- import messages --")
-            result = {
-              processed: 0,
-              imported: 0
-            }
-        } else if (op === 'create-person') {
-          const { config } = await self.createPerson(args)
-          push(config)
-        } else if (op === 'create-hub') {
-          const { config } = await self.createHub(args)
-          push(config)
-        } else if (op === 'profile') {
-          const profile = await self.getProfile(args.id)
-          debug("got profile", profile, "for", args.id)
-          if (profile) push(profile)
-        } else if (op === 'create-message') {
-          const rawPayload = oyaml.parts(chunk.toString()).slice(1).join(" | ")
-          const message = await self.createMessage(rawPayload)
-          pushString(message)
-        } else if (op === 'scan-people') {
-          await self.scanPeople(args.since)
-        } else if (op === 'scan-hubs') {
-          await self.scanHubs()
+
+        if (op === 'profile') {
+          const source = self.getProfileStream(args.id)
+          const filter = filterStream({ id: args.id })
+          const result = await getFirst(source, filter)
+          this.push(result)
+        } else if (op === 'messages') {
+          async = true
+          let source = self.getMessagesStream({ parts: true, original: true })
+          // TODO add a validation stream here, delete it from args so the filter doesn't get confused
+          if (Object.keys(args).length > 0) {
+            source = source.pipe(filterStream({ data: args }))
+          }
+          if (args.validate !== false) {
+            source = source.pipe(verificationStream(self.getPublicKeys))
+          }
+          source.on('data', obj => {
+            this.push(obj.original)
+          })
+          source.on('close', done)
         } else {
-          debug("ignoring command", op)
-          push({ error: `no command '${op}'` })
+          this.push({ error: `no command '${op}'` })
           context.cmd = null
         }
-      } else {
-        // debug("continuing", op, chunk.toString())
-        if (op === 'import-messages') {
-          const m = chunk.toString()
-          debug("processing message", m)
-          const { meta } = messages.parse(m)
-          result.processed++
-          let skip = false
-          if (meta && meta.hash) {
-            const exists = await self.messageExists(meta.hash)
-            debug(meta.hash, "exists already?", exists)
-            if (exists) skip = true
-          }
-          if (!skip) {
-            self.createMessage(m, { sign: false })
-            result.imported++              
-          }
+      }
 
-        }
-      }
-      done()
-    }, function(cb) {
-      debug("-- flushing command stream --")
-      debug("result:", result)
-      // return final result on flush
-      if (Object.keys(result).length > 0) {
-        this.push(oyaml.stringify(result)+"\n")
-      }
-      cb()
+      if (!async) done()
+      // this.push({ ok: 'cool', input: chunk })
+      // done()
     })
-    return commandStream
+    const input = oyamlStream.parse({ array: true, parts: true })
+    const output = input.pipe(commandStream).pipe(oyamlStream.stringify({ quoteSingleString: false })).pipe(newlines())
+    return [input, output]
   }
+
+  // getCommandStream() {
+  //   const self = this
+  //   const context = {}
+  //   let result = {}
+  //   const commandStream = through2(async function(chunk, encoding, done) {
+  //     let { cmd, op } = context
+  //     const pushString = str => this.push(str+"\n")
+  //     const push = data => pushString(oyaml.stringify(data))
+  //     if (!cmd) {
+  //       [cmd] = oyaml.parse(chunk.toString(), { array: true })
+  //       debug("got", cmd)
+  //       const op = cmd.op
+  //       context.op = op
+  //       delete cmd.op
+  //       const args = cmd
+  //       context.cmd = cmd
+  //       debug("context now:", context)
+  //       // single line commands
+  //       if (op === 'messages') {
+  //         debug("-- messages --")
+  //         await self.showMessages((m, info) => {
+  //           pushString(m.original)
+  //         }, Object.assign({ validate: true }, args))
+  //         debug("-- end messages --")
+  //       } else if (op === 'import-messages') {
+  //         debug("-- import messages --")
+  //           result = {
+  //             processed: 0,
+  //             imported: 0
+  //           }
+  //       } else if (op === 'create-person') {
+  //         const { config } = await self.createPerson(args)
+  //         push(config)
+  //       } else if (op === 'create-hub') {
+  //         const { config } = await self.createHub(args)
+  //         push(config)
+  //       } else if (op === 'profile') {
+  //         const profile = await self.getProfile(args.id)
+  //         debug("got profile", profile, "for", args.id)
+  //         if (profile) push(profile)
+  //       } else if (op === 'create-message') {
+  //         const rawPayload = oyaml.parts(chunk.toString()).slice(1).join(" | ")
+  //         const message = await self.createMessage(rawPayload)
+  //         pushString(message)
+  //       } else if (op === 'scan-people') {
+  //         await self.scanPeople(args.since)
+  //       } else if (op === 'scan-hubs') {
+  //         await self.scanHubs()
+  //       } else {
+  //         debug("ignoring command", op)
+  //         push({ error: `no command '${op}'` })
+  //         context.cmd = null
+  //       }
+  //     } else {
+  //       // debug("continuing", op, chunk.toString())
+  //       if (op === 'import-messages') {
+  //         const m = chunk.toString()
+  //         debug("processing message", m)
+  //         const { meta } = messages.parse(m)
+  //         result.processed++
+  //         let skip = false
+  //         if (meta && meta.hash) {
+  //           const exists = await self.messageExists(meta.hash)
+  //           debug(meta.hash, "exists already?", exists)
+  //           if (exists) skip = true
+  //         }
+  //         if (!skip) {
+  //           self.createMessage(m, { sign: false })
+  //           result.imported++              
+  //         }
+
+  //       }
+  //     }
+  //     done()
+  //   }, function(cb) {
+  //     debug("-- flushing command stream --")
+  //     debug("result:", result)
+  //     // return final result on flush
+  //     if (Object.keys(result).length > 0) {
+  //       this.push(oyaml.stringify(result)+"\n")
+  //     }
+  //     cb()
+  //   })
+  //   return commandStream
+  // }
 
   async getPublicKeys(id) {
     const trustedKeys = this.trustedKeys[id] || []
