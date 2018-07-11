@@ -4,3 +4,5 @@ node_modules
 .env
 data.png
 dist
+bloom.bin
+tmp.txt
