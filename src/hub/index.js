@@ -20,6 +20,7 @@ const newlines = require('../streams/newlines')
 const filterStream = require('../streams/filter')
 const sinceFilterStream = require('../streams/since')
 const verificationStream = require('../streams/verification')
+const cacheFile = require('../cache-file')
 
 const getFirst = function(...streams) {
   return new Promise((resolve, reject) => {
@@ -121,8 +122,10 @@ class Hub {
         //     // .pipe(verificationStream(self.getPublicKeys))
         } else if (op === 'scan-hubs') {
           async = true
-          // TODO store last sync time and use that?
-          let since = 0
+          const { read, write, callback } = self.getHubCacheStreams()
+          const cache = await cacheFile(read, write)
+          const since = cache.metadata.syned || 0
+          debug("last sync:", since)
           let source = self.getMessagesStream({ parts: true })
             .pipe(filterStream({ type: 'hub-profile' }, obj => obj.data[0]))
             .pipe(verificationStream(self.getPublicKeys))
@@ -134,9 +137,20 @@ class Hub {
               publicKeys: obj.data[0].publicKeys,
               hash: obj.data[1].hash
             }
-            console.log(oyaml.stringify(profileRecord))
+            debug("got profile:", oyaml.stringify(profileRecord))
+            cache.put(profileRecord)
           })
-          source.on('close', done)
+          cache.write()
+          source.on('finish', () => {
+            cache.metadata.synced = Math.floor(Date.now() / 1000)
+            debug("set last sync", cache.metadata.synced)
+            cache.write()
+            write.on('finish', async () => {
+              debug("calling the cleanup/copy callback")
+              await callback()
+              done()
+            })
+          })
         } else {
           this.push({ error: `no command '${op}'` })
           context.cmd = null

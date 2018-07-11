@@ -1,6 +1,6 @@
 const debug = require('debug')('othernet:filehub')
 const Hub = require('./index')
-const fs = require('graceful-fs')
+const fs = require('fs-extra')
 const split2 = require('split2')
 const through2 = require('through2')
 const FileSync = require('lowdb/adapters/FileSync')
@@ -8,6 +8,7 @@ const readLastLines = require('read-last-lines')
 const backwardsStream = require('fs-reverse')
 const oyaml = require('oyaml')
 const oyamlStream = require('../streams/oyaml')
+const tmp = require('tmp')
 require('colors')
 
 class FileHub extends Hub {
@@ -15,7 +16,8 @@ class FileHub extends Hub {
     super(Object.assign({}, opts, { adapter: new FileSync('data/db.json') }))
     debug("-- created filehub object --")
     this.messageFile = `data/${this.hubId}-messages.txt`
-    this.hubProfileFile = `data/${this.hubId}-people.txt`
+    this.hubProfileFile = `data/${this.hubId}-people.oyaml.txt`
+    this.hubCacheFile = `data/${this.hubId}-hubs.oyaml.txt`
   }
   writeMessage(message) {
     fs.appendFile(this.messageFile, message + "\n", () => {})
@@ -36,6 +38,28 @@ class FileHub extends Hub {
   // pass the id in case it's used for partitioning
   getProfileStream(id) {
     return backwardsStream(this.hubProfileFile).pipe(oyamlStream.parse())
+  }
+  getHubCacheStreams() {
+    const read = fs.createReadStream(this.hubCacheFile)
+    const tmpobj = tmp.fileSync()
+    const tmpFile = tmpobj.name
+    // const tmpFile = 'tmp.txt'
+    debug("temp file:", tmpFile)
+    const write = fs.createWriteStream(tmpFile)
+    // debug("write stream:", write)
+    // call the callback to copy temp to the new place, delete the temp file
+    const callback = () => {
+      return new Promise(async (resolve, reject) => {
+        debug("copying", tmpFile, "to", this.hubCacheFile)
+        await fs.copy(tmpFile, this.hubCacheFile)
+        tmpobj.removeCallback()
+      })
+    }
+    return {
+      read,
+      write,
+      callback
+    }
   }
   getMessagesStream(opts) {
     return fs.createReadStream(this.messageFile).pipe(split2()).pipe(oyamlStream.parse(opts))
