@@ -9,7 +9,7 @@ module.exports = async function(readStream, writeStream, { key='id' }={}) {
   const { frontMatter, bodyStream } = await oyamlFrontMatter(readStream)
   debug("loaded front matter:", frontMatter)
   const outStream = newlines()
-  outStream.pipe(writeStream)
+  if (writeStream) outStream.pipe(writeStream)
   const keys = {}
   if (frontMatter.keys) {
     frontMatter.keys.forEach(k => keys[k] = true)
@@ -51,10 +51,15 @@ module.exports = async function(readStream, writeStream, { key='id' }={}) {
     bodyStream.pipe(oldOnly).pipe(stringify).pipe(outStream)
     return outStream
  }
-  return {
+ const getReadStream = () => {
+   return bodyStream
+ }
+
+return {
     metadata: frontMatter,
     setMetadata,
     put,
-    write
+    write,
+    getReadStream
   }
 }
