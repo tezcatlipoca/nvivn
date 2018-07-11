@@ -63,7 +63,7 @@ class Hub {
     const context = {}
     const self = this
     const commandStream = through2.obj(async function(chunk, encoding, done) {
-      
+
       debug("handling input", chunk)
 
       let { cmd, op } = context
@@ -88,7 +88,7 @@ class Hub {
           delete args.validate
           const since = args.since
           delete args.since
- 
+
           let bodyFilter = Object.assign({}, args)
           const hash = bodyFilter.hash
           delete bodyFilter.hash
@@ -140,12 +140,10 @@ class Hub {
             debug("got profile:", oyaml.stringify(profileRecord))
             cache.put(profileRecord)
           })
-          cache.write()
           source.on('finish', () => {
             cache.metadata.synced = Math.floor(Date.now() / 1000)
             debug("set last sync", cache.metadata.synced)
-            cache.write()
-            write.on('finish', async () => {
+            cache.write().on('finish', async () => {
               debug("calling the cleanup/copy callback")
               await callback()
               done()
@@ -232,7 +230,7 @@ class Hub {
   //         }
   //         if (!skip) {
   //           self.createMessage(m, { sign: false })
-  //           result.imported++              
+  //           result.imported++
   //         }
 
   //       }
@@ -276,13 +274,13 @@ class Hub {
 
   async createProfile(idBuffer, type, opts={}) {
     const id = proquint.encode(idBuffer)
-  
+
     const keyPair = signatures.keyPair()
     const keys = {
       secretKey: bs58.encode(keyPair.secretKey),
       publicKey: bs58.encode(keyPair.publicKey)
     }
-  
+
     const t = timestamp.now()
     const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
     const message = this.createMessage(oyaml.stringify(announceMessage))
@@ -302,7 +300,7 @@ class Hub {
     meta.route.push({ id: this.hubId, t: now })
     if (opts.sign) {
       if (!meta.signed) meta.signed = []
-      meta.signed.push({ id: this.hubId, signature: sign(body, this.config.secretKey) })  
+      meta.signed.push({ id: this.hubId, signature: sign(body, this.config.secretKey) })
     }
     if (!meta.hash) {
       // create a hash based on the message body and this first route hub and timestamp

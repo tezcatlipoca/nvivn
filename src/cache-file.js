@@ -49,7 +49,7 @@ module.exports = async function(readStream, writeStream, { key='id' }={}) {
     stringify.on('finish', () => debug("stringify done"))
     bodyStream.on('end', () => debug("bodystream done"))
     bodyStream.pipe(oldOnly).pipe(stringify).pipe(outStream)
-    return bodyStream
+    return outStream
  }
   return {
     metadata: frontMatter,
