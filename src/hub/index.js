@@ -77,9 +77,14 @@ class Hub {
         context.cmd = cmd
 
         if (op === 'profile') {
-          // const source = self.getProfileStream(args.id)
-          const cacheReadStream = self.getProfileCacheStreams().read
+          let cacheReadStream
+          if (args.id.includes('-')) {
+            cacheReadStream = self.getProfileCacheStreams().read
+          } else {
+            cacheReadStream = self.getHubCacheStreams().read
+          }
           const cache = await cacheFile(cacheReadStream)
+          if (!cache.exists(args.id)) return
           const filter = filterStream({ id: args.id })
           const result = await getFirst(cache.getReadStream(), filter)
           this.push(result)

@@ -54,12 +54,16 @@ module.exports = async function(readStream, writeStream, { key='id' }={}) {
  const getReadStream = () => {
    return bodyStream
  }
+ const exists = (key) => {
+   return !!keys[key]
+ }
 
 return {
     metadata: frontMatter,
     setMetadata,
     put,
     write,
-    getReadStream
+    getReadStream,
+    exists
   }
 }
