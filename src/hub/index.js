@@ -3,11 +3,7 @@ const proquint = require('proquint')
 const crypto = require('crypto')
 const bs58 = require('bs58')
 const signatures = require('sodium-signatures')
-const low = require('lowdb')
-const Memory = require('lowdb/adapters/Memory')
 const oyaml = require('oyaml')
-const datemath = require('datemath-parser').parse
-const escapeStringRegexp = require('escape-string-regexp')
 const through2 = require('through2')
 const pump = require('pump')
 const timestamp = require('../timestamp')
@@ -52,10 +48,6 @@ class Hub {
     this.trustedKeys = config.trustedKeys || {}
     this.getPublicKeys = this.getPublicKeys.bind(this)
     this.hashAlgorithm = 'sha256'
-
-    this.db = low(config.adapter || new Memory())
-    this.db.defaults({ hubs: {} })
-      .write()
   }
 
   // just this hub's key and the bootstrapped trusted keys
