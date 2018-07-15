@@ -113,7 +113,10 @@ class Hub {
           source.on('data', obj => {
             this.push(obj.original)
           })
-          source.on('end', done)
+          source.on('error', console.error)
+          source.on('end', () => {
+            done()
+          })
         } else if (op === 'create-person') {
           const { config } = await self.createPerson(args)
           this.push(config)
@@ -127,8 +130,8 @@ class Hub {
         } else if (op === 'scan-people') {
           await self.scanPeople()
         } else if (op === 'create-message') {
-          const [_, body, meta] = chunk.parts
-          const newMessage = [body, meta].join(" | ")
+          const [_, ...rest] = chunk.parts
+          const newMessage = rest.join(" | ")
           debug("creating message:", newMessage)
           const result = await self.createMessage(newMessage)
           this.push(result)

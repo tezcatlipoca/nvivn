@@ -4,6 +4,7 @@ const datemath = require('datemath-parser').parse
 const parseDate = require('./timestamp').parse
 const { getValue } = require('./label-value')
 const oyaml = require('oyaml')
+const Query = mingo.Query || mingo.default.Query
 
 const allowAll = {
   test: () => true
@@ -12,6 +13,7 @@ const allowAll = {
 const customFunctions = { value: getValue, datemath, date: parseDate }
 
 module.exports = function(filter) {
+  debug("building filter:", filter)
   let { body, meta } = filter
   let bodyQuery = (body || filter)
   if (!body) {
@@ -20,8 +22,8 @@ module.exports = function(filter) {
   }
   if (Object.keys(bodyQuery).length === 0) bodyQuery = null
   debug("body query", bodyQuery)
-  const bodyFilter = bodyQuery ? new mingo.Query(bodyQuery) : allowAll
-  const metaFilter = meta ? new mingo.Query(meta) : allowAll
+  const bodyFilter = bodyQuery ? new Query(bodyQuery) : allowAll
+  const metaFilter = meta ? new Query(meta) : allowAll
   return ({ body, meta }) => {
     if (bodyQuery && bodyQuery.t && body.t) body = Object.assign({}, body, { t: parseInt(getValue(body.t)), 't.raw': body.t })
     // if (bodyQuery.t) debug(body.t, body['t.raw'])

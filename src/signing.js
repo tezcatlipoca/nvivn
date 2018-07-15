@@ -27,12 +27,12 @@ const verify = async function(inputMessage, getPublicKey) {
           let verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), pubKeyBuffer)
           if (!verificationResult) verificationResult = signatures.verify(bodyBuffer, bs58.decode(signature), pubKeyBuffer)
           sigResults[id] = verificationResult
-          if (verificationResult) anyVerified = true  
+          if (verificationResult) anyVerified = true
         })
       } else {
         sigResults[id] = undefined
       }
-    })  
+    })
     await Promise.all(promises)
   }
   return {
