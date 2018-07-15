@@ -85,10 +85,12 @@ module.exports = async function(readStream, writeStream, { key='id', bloomFilter
  const getReadStream = () => {
    return bodyStream
  }
- // FIXME this can only be run once, then the stream is exhausted
- const definitelyExists = async (k) => {
+ // FIXME this can only be run once against the stream, then the stream is exhausted
+ const exists = async (k) => {
    return new Promise(resolve => {
      if (filter) {
+       if (filter.has(k) === false) return resolve(false)
+       // TODO fetch the read stream here
        let done = false
        bodyStream.on('data', obj => {
          if (obj[key] === k) resolve(true)
@@ -121,8 +123,8 @@ return {
     put,
     write,
     getReadStream,
+    exists,
     maybeExists,
-    definitelyExists,
     rate
   }
 }

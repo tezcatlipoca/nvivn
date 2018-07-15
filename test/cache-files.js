@@ -99,7 +99,7 @@ tap.test("check if a key exists using a bloom filter", async function(t) {
   t.notOk(c.maybeExists('8f985dg8'))
   t.notOk(c.maybeExists(30000))
   t.notOk(c.maybeExists('rip van winkle'))
-  const noReallyThough = await c.definitelyExists('8f985dg8')
+  const noReallyThough = await c.exists('8f985dg8')
   t.notOk(noReallyThough)
   const start = Date.now()
   c.write()
