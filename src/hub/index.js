@@ -113,7 +113,7 @@ class Hub {
           source.on('data', obj => {
             this.push(obj.original)
           })
-          source.on('close', done)
+          source.on('end', done)
         } else if (op === 'create-person') {
           const { config } = await self.createPerson(args)
           this.push(config)
@@ -169,7 +169,7 @@ class Hub {
       debug("-- flushing command stream --")
       debug("result:", context.result)
       // return final result on flush
-      if (Object.keys(context.result).length > 0) {
+      if (context.result && Object.keys(context.result).length > 0) {
         this.push(oyaml.stringify(context.result))
       }
       done()

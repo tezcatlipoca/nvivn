@@ -5,20 +5,20 @@ const port = 9999
 
 const server = (hub) => {
   return http.createServer((req, res) => {
-    const commandStream = hub.getCommandStream()
+    const [input, output] = hub.getCommandStreams()
     if (req.method === 'GET') {
       const { pathname } = url.parse(req.url, true)
       const cmd = pathname.slice(1).replace(/[+_]/g,' ')
       console.log("get command", cmd)
-      commandStream.write(cmd)
-      commandStream.end()
-      commandStream.pipe(res)
-    } else {
-      const splitPipe = split2()
-      req.on('end', () => console.log("done reading request"))
-      splitPipe.on('end', () => console.log("split done reading"))
-      commandStream.on('end', () => console.log("command stream done"))
-      req.pipe(splitPipe).pipe(commandStream).pipe(res)
+      input.write(cmd)
+      output.pipe(res)
+      input.end()
+    // } else {
+    //   const splitPipe = split2()
+    //   req.on('end', () => console.log("done reading request"))
+    //   splitPipe.on('end', () => console.log("split done reading"))
+    //   commandStream.on('end', () => console.log("command stream done"))
+    //   req.pipe(splitPipe).pipe(commandStream).pipe(res)
     }
   })
 }
@@ -26,7 +26,7 @@ const server = (hub) => {
 if (require.main === module) {
   server.listen(port, () => {
     console.log(`server is listening on ${port}`)
-  })  
+  })
 }
 
 module.exports = server
