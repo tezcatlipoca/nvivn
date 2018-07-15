@@ -8,7 +8,7 @@ const server = (hub) => {
     const [input, output] = hub.getCommandStreams()
     if (req.method === 'GET') {
       const { pathname } = url.parse(req.url, true)
-      const cmd = pathname.slice(1).replace(/[+_]/g,' ')
+      const cmd = decodeURIComponent(pathname).slice(1).replace(/[+_]/g,' ')
       console.log("get command", cmd)
       input.write(cmd)
       output.pipe(res)

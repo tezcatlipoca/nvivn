@@ -117,17 +117,15 @@ class Hub {
         } else if (op === 'create-person') {
           const { config } = await self.createPerson(args)
           this.push(config)
+          self.scanPeople()
         } else if (op === 'create-hub') {
           const { config } = await self.createHub(args)
           this.push(config)
+          self.scanHubs()
         } else if (op === 'scan-hubs') {
-          const { read, write, callback } = self.getHubCacheStreams()
-          const filter = { type: 'hub-profile' }
-          await self.syncCache({ read, write, filter, callback })
+          await self.scanHubs()
         } else if (op === 'scan-people') {
-          const { read, write, callback } = self.getProfileCacheStreams()
-          const filter = { type: 'person-profile' }
-          await self.syncCache({ read, write, filter, callback })
+          await self.scanPeople()
         } else if (op === 'create-message') {
           const [_, body, meta] = chunk.parts
           const newMessage = [body, meta].join(" | ")
@@ -177,6 +175,18 @@ class Hub {
     const input = oyamlStream.parse({ array: true, parts: true, original: true })
     const output = input.pipe(commandStream).pipe(oyamlStream.stringify({ quoteSingleString: false })).pipe(newlines())
     return [input, output]
+  }
+
+  async scanPeople() {
+    const { read, write, callback } = this.getProfileCacheStreams()
+    const filter = { type: 'person-profile' }
+    await this.syncCache({ read, write, filter, callback })
+  }
+
+  async scanHubs() {
+    const { read, write, callback } = this.getHubCacheStreams()
+    const filter = { type: 'hub-profile' }
+    await this.syncCache({ read, write, filter, callback })
   }
 
   syncCache({ read, write, filter, callback }) {
@@ -230,7 +240,8 @@ class Hub {
     const t = timestamp.now()
     const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
     const message = this.createMessage(oyaml.stringify(announceMessage))
-    const trustedKeys = await this.getTrustedKeys()
+    // TODO load all current trusted keys, not just bootstrapped keys
+    const trustedKeys = this.trustedKeys
     return {
       id,
       keys,
