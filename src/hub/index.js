@@ -23,6 +23,7 @@ const verificationStream = require('../streams/verification')
 const cacheFile = require('../cache-file')
 
 const getFirst = function(...streams) {
+  let resolved = false
   return new Promise((resolve, reject) => {
     const s = pump(...streams, (err) => {
       debug("--- getFirst stream done ---", err)
@@ -30,9 +31,13 @@ const getFirst = function(...streams) {
     })
     s.on('data', result => {
       debug("--- getFirst got data ---", result)
-      resolve(result)
-      s.destroy()
+      if (!resolved) {
+        resolve(result)
+        s.destroy()
+        resolved = true
+      }
     })
+    s.on('end', () => resolve(null))
   })
 }
 
@@ -64,8 +69,7 @@ class Hub {
     const self = this
     const commandStream = through2.obj(async function(chunk, encoding, done) {
 
-      debug("handling input", chunk)
-
+      // debug("handling input", chunk)
       let { cmd, op } = context
       let async = false
 
@@ -75,6 +79,7 @@ class Hub {
         delete cmd.op
         let args = cmd
         context.cmd = cmd
+        context.op = op
 
         if (op === 'profile') {
           let cacheReadStream
@@ -137,15 +142,47 @@ class Hub {
           debug("creating message:", newMessage)
           const result = await self.createMessage(newMessage)
           this.push(result)
+        } else if (op === 'import-messages') {
+          context.result = {
+            processed: 0,
+            imported: 0
+          }
         } else {
           this.push({ error: `no command '${op}'` })
           context.cmd = null
         }
+      } else {
+        // it's multiline input, and we already have our op line
+        if (op === 'import-messages') {
+          const m = chunk.original
+          debug("processing message", m)
+          context.result.processed++
+          const meta = chunk.data[1]
+          // see if it's there already
+          if (meta && meta.hash) {
+            const filter = filterStream({ hash: meta.hash })
+            const result = await getFirst(self.getMessagesStream(), filter)
+            debug("found?", !!result)
+            if (!result) {
+              debug("appending message")
+              await self.createMessage(m, { sign: false })
+              context.result.imported++
+            }
+          }
+        }
       }
 
       if (!async) done()
+    }, function(done) {
+      debug("-- flushing command stream --")
+      debug("result:", context.result)
+      // return final result on flush
+      if (Object.keys(context.result).length > 0) {
+        this.push(oyaml.stringify(context.result))
+      }
+      done()
     })
-    const input = oyamlStream.parse({ array: true, parts: true })
+    const input = oyamlStream.parse({ array: true, parts: true, original: true })
     const output = input.pipe(commandStream).pipe(oyamlStream.stringify({ quoteSingleString: false })).pipe(newlines())
     return [input, output]
   }
@@ -180,70 +217,6 @@ class Hub {
       })
     })
   }
-
-  // getCommandStream() {
-  //   const self = this
-  //   const context = {}
-  //   let result = {}
-  //   const commandStream = through2(async function(chunk, encoding, done) {
-  //     let { cmd, op } = context
-  //     const pushString = str => this.push(str+"\n")
-  //     const push = data => pushString(oyaml.stringify(data))
-  //     if (!cmd) {
-  //       [cmd] = oyaml.parse(chunk.toString(), { array: true })
-  //       debug("got", cmd)
-  //       const op = cmd.op
-  //       context.op = op
-  //       delete cmd.op
-  //       const args = cmd
-  //       context.cmd = cmd
-  //       debug("context now:", context)
-  //       // single line commands
-  //       if (op === 'messages') {
-  //         debug("-- messages --")
-  //         await self.showMessages((m, info) => {
-  //           pushString(m.original)
-  //         }, Object.assign({ validate: true }, args))
-  //         debug("-- end messages --")
-  //       } else if (op === 'import-messages') {
-  //         debug("-- import messages --")
-  //           result = {
-  //             processed: 0,
-  //             imported: 0
-  //           }
-  //       }
-  //     } else {
-  //       // debug("continuing", op, chunk.toString())
-  //       if (op === 'import-messages') {
-  //         const m = chunk.toString()
-  //         debug("processing message", m)
-  //         const { meta } = messages.parse(m)
-  //         result.processed++
-  //         let skip = false
-  //         if (meta && meta.hash) {
-  //           const exists = await self.messageExists(meta.hash)
-  //           debug(meta.hash, "exists already?", exists)
-  //           if (exists) skip = true
-  //         }
-  //         if (!skip) {
-  //           self.createMessage(m, { sign: false })
-  //           result.imported++
-  //         }
-
-  //       }
-  //     }
-  //     done()
-  //   }, function(cb) {
-  //     debug("-- flushing command stream --")
-  //     debug("result:", result)
-  //     // return final result on flush
-  //     if (Object.keys(result).length > 0) {
-  //       this.push(oyaml.stringify(result)+"\n")
-  //     }
-  //     cb()
-  //   })
-  //   return commandStream
-  // }
 
   createPerson(opts={}) {
     return this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), 'person', opts)
