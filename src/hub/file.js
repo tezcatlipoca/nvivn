@@ -19,9 +19,9 @@ class FileHub extends Hub {
     this.profileCacheFile = `data/${this.hubId}-people.oyaml.txt`
     this.hubCacheFile = `data/${this.hubId}-hubs.oyaml.txt`
   }
-  // writeMessage(message) {
-  //   fs.appendFile(this.messageFile, message + "\n", () => {})
-  // }
+  writeMessage(message) {
+    fs.appendFile(this.messageFile, message + "\n", () => {})
+  }
   // writeProfile(profile) {
   //   fs.appendFile(this.hubProfileFile, profile + "\n", () => {})
   // }

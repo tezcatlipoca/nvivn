@@ -34,7 +34,7 @@ if (argv._[0] === 'server') {
 } else {
   const parsedCmd = oyaml.parse(cmd, { array: true })
   let cmdParts = oyaml.parts(cmd)
-  
+
   const signIfPossible = function(payload, { id, secretKey }={}) {
     const body = oyaml.parse(payload)
     if (!id) id = body.from || userConfig.id
@@ -50,13 +50,13 @@ if (argv._[0] === 'server') {
       return payload
     }
   }
-  
+
   if (parsedCmd[0].op === 'create-message') {
     const payload = cmdParts[1]
     cmd = [cmdParts[0], signIfPossible(payload)].join(" | ")
     debug("cmd now", cmd)
   }
-  
+
   // const s = hub.getCommandStream()
   // s.write(cmd)
   // if (argv.f) {
@@ -64,9 +64,9 @@ if (argv._[0] === 'server') {
   // } else {
   //   s.end()
   // }
-  // s.pipe(process.stdout)  
+  // s.pipe(process.stdout)
   const [input, output] = hub.getCommandStreams()
-  output.pipe(process.stdout)  
+  output.pipe(process.stdout)
   input.write(cmd)
   if (argv.f) {
     fs.createReadStream(argv.f).pipe(split2()).pipe(input)

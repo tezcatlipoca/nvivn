@@ -131,6 +131,12 @@ class Hub {
           const { read, write, callback } = self.getProfileCacheStreams()
           const filter = { type: 'person-profile' }
           await self.syncCache({ read, write, filter, callback })
+        } else if (op === 'create-message') {
+          const [_, body, meta] = chunk.parts
+          const newMessage = [body, meta].join(" | ")
+          debug("creating message:", newMessage)
+          const result = await self.createMessage(newMessage)
+          this.push(result)
         } else {
           this.push({ error: `no command '${op}'` })
           context.cmd = null
