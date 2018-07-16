@@ -2,16 +2,24 @@ const fs = require('fs')
 const steggy = require('steggy')
 const text2png = require('text2png')
 
-const encode = function(messages, name, password) {
+const encode = function(messages, name, password, size=24) {
   const imageData = text2png(name, {
-    font: '80px Helvetica',
+    font: `${size}px Helvetica`,
     textColor: 'black',
     bgColor: 'white',
     lineSpacing: 10,
     padding: 20
   })
-  const concealed = steggy.conceal(password)(imageData, messages, 'utf8')
-  return concealed
+  try {
+    const concealed = steggy.conceal(password)(imageData, messages, 'utf8')
+    return concealed
+  } catch (err) {
+    if (err.message.includes('Image is not large enough')) {
+      return encode(messages, name, password, size*1.5)
+    } else {
+      throw err
+    }
+  }
 }
 
 const decode = function(buffer, password) {
@@ -36,7 +44,7 @@ module.exports = {
 // const original = canvas
 // // const original = fs.readFileSync('/Users/jkriss/Desktop/listen-up.png') // buffer
 // const message = messageFeed
- 
+
 // // encoding should be supplied if message is provided as a string in non-default encoding
 // const concealed = steggy.conceal(/* optional password */)(original, message /*, encoding */)
 // fs.writeFileSync('./data.png', concealed)
