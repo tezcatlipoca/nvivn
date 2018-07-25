@@ -3,17 +3,8 @@ const Hub = require('./index')
 const split2 = require('split2')
 const oyaml = require('oyaml')
 const oyamlStream = require('../streams/oyaml')
-const { Readable } = require('stream')
 const memStreams = require('memory-streams')
-
-const readStreamFromString = function(str) {
-  const inStream = new Readable({
-    read() {}
-  });
-  inStream.push(str)
-  inStream.push(null)
-  return inStream
-}
+const readStreamFromString = require('../streams/read-stream-from-string')
 
 class MemoryHub extends Hub {
   constructor(opts={}) {

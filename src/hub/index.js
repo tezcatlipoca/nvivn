@@ -253,7 +253,7 @@ class Hub {
     }
   }
 
-  createMessage(messageString, opts={ sign: true }) {
+  async createMessage(messageString, opts={ sign: true }) {
     const { body, meta = {} } = messages.parse(messageString)
     const now = timestamp.now()
     if (!meta.route) meta.route = []
@@ -272,7 +272,7 @@ class Hub {
       // meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
     }
     const message = messages.stringify({ body, meta })
-    if (this.writeMessage) this.writeMessage(message)
+    if (this.writeMessage) await this.writeMessage(message)
     return message
   }
 
