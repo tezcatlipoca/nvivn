@@ -5,26 +5,34 @@ const { createCanvas } = canvas
 global.Image = canvas.Image
 const fs = require('fs')
 const crypto = require('crypto')
+const { countBytesForNRgbBytes } = require('steggy/lib/png')
+const {
+  BYTE_SIZE,
+  LENGTH_BYTES,
+  SHASUM_BYTES,
+} = require('steggy/lib/defaults')
 
-const makeImage = async function(data, label, hash, size) {
+const getSize = function(data) {
+  const bytesToStore = LENGTH_BYTES + SHASUM_BYTES + data.length
+  const bytesRequired = countBytesForNRgbBytes(bytesToStore)
+  console.log("-- need", bytesRequired, "to store", data.length, "bytes")
+  // convert back into pixels
+  const pixelCount = bytesRequired / 4 // channels
+  // take square root to get the image dimensions
+  return Math.ceil(Math.sqrt(pixelCount))
+}
+
+const makeImage = async function(data, label, hash, minSize) {
+  const requiredSize = getSize(data)
+  const size = Math.max(minSize, requiredSize)
   console.log("making image:", size)
   const canvas = createCanvas(size, size)
   const ctx = canvas.getContext('2d')
   await identiconImage(ctx, hash, label, size)
   console.log("original image:", canvas.toBuffer().length, "bytes")
-  try {
-    const concealed = steggy.conceal()(canvas.toBuffer(), data)
-    console.log("concealed image:", concealed.length, "bytes")
-    return concealed
-  } catch (err) {
-    if (err.message.includes('Image is not large enough')) {
-      return makeImage(data, label, hash, size*2)
-    } else {
-      console.log("error encoding data in image:", err)
-      throw err
-    }
-  }
-
+  const concealed = steggy.conceal()(canvas.toBuffer(), data)
+  console.log("concealed image:", concealed.length, "bytes")
+  return concealed
 }
 
 const encode = async function(data, label, hash) {
@@ -41,6 +49,11 @@ const encode = async function(data, label, hash) {
 
 const decode = function(buffer) {
   return steggy.reveal()(buffer)
+}
+
+module.exports = {
+  encode,
+  decode
 }
 
 if (require.main === module) {

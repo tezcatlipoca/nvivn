@@ -40,6 +40,7 @@
     "text2png": "^1.1.1",
     "through2": "^2.0.3",
     "tmp": "^0.0.33",
+    "triplesec": "^3.0.26",
     "user-home": "^2.0.0"
   },
   "devDependencies": {
