@@ -1,5 +1,4 @@
 const jdenticon = require("jdenticon")
-const { createCanvas, Image } = require('canvas')
 const fs = require('fs')
 
 jdenticon.config = {
@@ -15,24 +14,6 @@ jdenticon.config = {
     // backColor: "#fff"
 };
 
-const width = 400
-// const height = width * 1.2
-const height = width
-// const label = "thing with descender"
-// const label = "route.earth"
-// const label = 'hozuj-lomuz-nuvuv'
-// const label = 'kokos-gonoz-nuvuv'
-const label = "babab"
-// const label = "nuvuv"
-const canvas = createCanvas(width, height)
-const ctx = canvas.getContext('2d')
-
-// const identicon = jdenticon.toPng("babab", width)
-const identicon = jdenticon.toPng(label, width)
-
-ctx.fillStyle = "white"
-ctx.fillRect(0, 0, width, height)
-
 const setFontSize = (ctx, string, fontSize, maxWidth) => {
   ctx.font = `bold ${fontSize}px "Roboto Mono"`;
   // console.log("trying", ctx.font)
@@ -43,29 +24,35 @@ const setFontSize = (ctx, string, fontSize, maxWidth) => {
   }
 }
 
-const img = new Image()
-img.onerror = err => { throw err }
-img.onload = () => {
-  console.log("image loaded")
-  const margin = width / 30
-  ctx.drawImage(img, 0, 0)
+module.exports = (ctx, hash, label, size) => {
+  const width = size
+  const height = width
 
-  setFontSize(ctx, label, width/5, width-(3*margin))
-  const te = ctx.measureText(label)
-  // TODO if this is wider than the image, shrink it
-  ctx.fillStyle = 'rgba(255,255,255, 0.85)'
-  // ctx.fillStyle = 'white'
-  console.log("te:", te)
-  const teHeight = te.actualBoundingBoxAscent + te.actualBoundingBoxDescent
-  // console.log("teHeight:", teHeight)
-  ctx.fillRect((width/2) - (te.width/2) - margin, (height/2) - (teHeight/2) - margin, te.width+(2*margin), teHeight+(2*margin))
-  // ctx.fillRect(0, height-teHeight-(2*margin), width, teHeight+(2*margin))
-  ctx.textAlign = 'center'
-  // ctx.fillStyle = 'white'
-  ctx.fillStyle = 'black'
-  ctx.fillText(label, width/2, (height/2) + (teHeight/2) - (te.actualBoundingBoxDescent*0.8));
-  // ctx.fillText(label, width/2, width+teHeight+margin);
+  const identicon = jdenticon.toPng(hash, width)
 
-  fs.writeFile('test.png', canvas.toBuffer());
+  ctx.fillStyle = "white"
+  ctx.fillRect(0, 0, width, height)
+
+  const img = new Image()
+
+  return new Promise((resolve, reject) => {
+    img.onerror = err => reject
+    img.onload = () => {
+      const margin = width / 30
+      ctx.drawImage(img, 0, 0)
+
+      setFontSize(ctx, label, width/5, width-(3*margin))
+      const te = ctx.measureText(label)
+      // TODO if this is wider than the image, shrink it
+      ctx.fillStyle = 'rgba(255,255,255, 0.85)'
+      // console.log("te:", te)
+      const teHeight = te.actualBoundingBoxAscent + te.actualBoundingBoxDescent
+      ctx.fillRect((width/2) - (te.width/2) - margin, (height/2) - (teHeight/2) - margin, te.width+(2*margin), teHeight+(2*margin))
+      ctx.textAlign = 'center'
+      ctx.fillStyle = 'black'
+      ctx.fillText(label, width/2, (height/2) + (teHeight/2) - (te.actualBoundingBoxDescent*0.8));
+      resolve()
+    }
+    img.src = identicon
+  })
 }
-img.src = identicon
