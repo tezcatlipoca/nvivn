@@ -85,6 +85,9 @@ class Hub {
           const filter = filterStream({ id: args.id })
           const result = await getFirst(cache.getReadStream(), filter)
           this.push(result)
+        } else if (op === 'announce') {
+          const result = await self.announce(args)
+          this.push(result)
         } else if (op === 'messages') {
           async = true
           let source = self.getMessagesStream({ parts: true, original: true })
@@ -251,6 +254,12 @@ class Hub {
       message,
       config: Object.assign({ id }, keys, { trustedKeys })
     }
+  }
+
+  announce(args) {
+    const fullId = proquint.encode(bs58.decode(this.config.publicKey))
+    const m = { ...args, id: fullId, publicKey: this.config.publicKey }
+    return this.createMessage(oyaml.stringify(m))
   }
 
   async createMessage(messageString, opts={ sign: true }) {
