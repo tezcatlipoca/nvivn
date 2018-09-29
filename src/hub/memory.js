@@ -10,6 +10,7 @@ class MemoryHub extends Hub {
   constructor(opts={}) {
     super(Object.assign({}, opts))
     this.messages = opts.messages || ''
+    if (this.messages.length > 0 && this.messages[this.messages.length-1] != "\n") this.messages += "\n"
     this.profileCache = ''
     this.hubCache = ''
   }
