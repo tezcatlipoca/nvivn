@@ -1,6 +1,8 @@
-- index person profiles in the hub's namespace
-- don't allow assignment of already assigned hub ids
-- don't allow assignment of already assigned person ids
+- remove create-hub and create-person
+- scan for public key announcement messages, and cache those in the profile stream
+- move web code into its repo (then can include canvas stuff)
+- implement TTL-based message deletion
+- implement message deletion (by author or hub)
 - make sure line by line scans are ending on match(?)
 - add request signing to the cli
 - lock down access to server tasks (scanHubs, scanPeople)

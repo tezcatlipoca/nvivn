@@ -10,7 +10,7 @@ const FileHub = require('../src/hub/file')
 const signing = require('../src/signing')
 require('colors')
 
-const hubConfig = config.loadLocalConfig(null, { create: true, length: 5 })
+const hubConfig = config.loadLocalConfig(null, { create: true, length: 2 })
 const userConfig = config.loadUserConfig()
 
 const hub = new FileHub(hubConfig)
