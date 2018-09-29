@@ -34,9 +34,10 @@ const verify = async function(parsedMessageObject) {
   }
 }
 
+const memoizedVerify = memoize(verify, { primitive: true, max:10000 })
+
 module.exports = function(opts={}) {
   return through2.obj(async function(message, enc, callback) {
-    const memoizedVerify = memoize(verify, { primitive: true, max:10000 })
     const result = await memoizedVerify(message)
     debug("verification result:", result)
     if (result.verified) {
