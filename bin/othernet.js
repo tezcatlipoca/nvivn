@@ -29,18 +29,25 @@ if (argv._[0] === 'server') {
   const server = require('../src/server')
   const port = argv.p || 9999
 
-  const services = polo()
+  const services = polo({
+    heartbeat: 30*1000 // 30 seconds
+  })
 
   server(hub).listen(port, () => {
     console.log(`server is listening at http://localhost:${port}`)
     services.put({
       name: hub.config.id,
       service: 'route.earth',
+      publicKey: hub.config.publicKey,
       // host:'example.com', // defaults to the network ip of the machine
       port//: 8080          // we are listening on port 8080.
     })
-    services.once('up', function(name, service) {
-      console.log(apps.get(name))
+    services.on('up', function(name, service) {
+      console.log("new peer:", services.get(name))
+      console.log("peers now", services.all())
+    });
+    services.on('down', function(name, service) {
+      console.log(name, "went away")
     });
     console.log("all peers", services.all())
   })
