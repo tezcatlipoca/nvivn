@@ -35,6 +35,15 @@ if (argv._[0] === 'server') {
 
   server(hub).listen(port, () => {
     console.log(`server is listening at http://localhost:${port}`)
+
+    const filterPeers = (peers) => {
+      // console.log("all peers:", peers)
+      const peerNames = Object.keys(peers).filter(name => name !== hub.config.id)
+      // console.log("getting info for peers:", peerNames)
+      // TODO later we can map multiple hosts for a single name
+      return peerNames.map(n => peers[n][0]).filter(p => p.service === 'route.earth')
+    }
+
     services.put({
       name: hub.config.id,
       service: 'route.earth',
@@ -43,13 +52,14 @@ if (argv._[0] === 'server') {
       port//: 8080          // we are listening on port 8080.
     })
     services.on('up', function(name, service) {
-      console.log("new peer:", services.get(name))
-      console.log("peers now", services.all())
+      console.log("new peer:", name)
+      console.log("peers now", filterPeers(services.all()))
     });
     services.on('down', function(name, service) {
       console.log(name, "went away")
+      console.log("peers now", filterPeers(services.all()))
     });
-    console.log("all peers", services.all())
+    console.log("all peers", filterPeers(services.all()))
   })
 } else {
   const parsedCmd = oyaml.parse(cmd, { array: true })
