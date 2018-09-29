@@ -25,6 +25,7 @@
     "minimist": "^1.2.0",
     "ngeohash": "^0.6.0",
     "oyaml": "^0.1.5",
+    "polo": "^0.8.1",
     "proquint": "^0.0.1",
     "pump": "^3.0.0",
     "sodium-signatures": "^2.1.1",

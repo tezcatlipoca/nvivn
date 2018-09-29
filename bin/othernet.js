@@ -8,7 +8,7 @@ const split2 = require('split2')
 const config = require('../src/config')
 const FileHub = require('../src/hub/file')
 const signing = require('../src/signing')
-require('colors')
+const polo = require('polo')
 
 let hubConfig = config.loadLocalConfig(null, { create: true, length: 2 })
 const userConfig = config.loadUserConfig()
@@ -28,8 +28,21 @@ debug('opts', argv)
 if (argv._[0] === 'server') {
   const server = require('../src/server')
   const port = argv.p || 9999
+
+  const services = polo()
+
   server(hub).listen(port, () => {
     console.log(`server is listening at http://localhost:${port}`)
+    services.put({
+      name: hub.config.id,
+      service: 'route.earth',
+      // host:'example.com', // defaults to the network ip of the machine
+      port//: 8080          // we are listening on port 8080.
+    })
+    services.once('up', function(name, service) {
+      console.log(apps.get(name))
+    });
+    console.log("all peers", services.all())
   })
 } else {
   const parsedCmd = oyaml.parse(cmd, { array: true })
