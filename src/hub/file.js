@@ -47,6 +47,7 @@ class FileHub extends Hub {
     return this.getCacheStreams(this.profileCacheFile)
   }
   getMessagesStream(opts) {
+    fs.ensureFileSync(this.messageFile)
     return fs.createReadStream(this.messageFile).pipe(split2()).pipe(oyamlStream.parse(opts))
   }
 

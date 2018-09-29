@@ -2,6 +2,7 @@ const path = require('path')
 const userHome = require('user-home')
 const fs = require('fs')
 const oyaml = require('oyaml')
+const idGenerator = require('./id')
 
 const loadConfig = function(configPath) {
   try {
@@ -15,9 +16,16 @@ const loadUserConfig = function() {
   return loadConfig(path.join(userHome, '.route-earth'))
 }
 
-const loadLocalConfig = function(configPath) {
+const loadLocalConfig = function(configPath, opts={}) {
   if (!configPath) configPath = path.resolve(process.cwd(), '.hub')
-  return loadConfig(configPath)
+  console.log("loading local config", configPath, opts)
+  let config = loadConfig(configPath)
+  if (Object.keys(config).length === 0 && opts.create) {
+    config = idGenerator(opts.length || 3)
+    console.log("writing new config to", configPath)
+    fs.writeFileSync(configPath, oyaml.stringify(config))
+  }
+  return config
 }
 
 module.exports = {

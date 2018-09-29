@@ -1,3 +1,5 @@
+- easier/clearer bootstrapping for a new hub
+- autogenerate config (keys, id) on first web load
 - index person profiles in the hub's namespace
 - don't allow assignment of already assigned hub ids
 - don't allow assignment of already assigned person ids
