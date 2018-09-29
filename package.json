@@ -34,8 +34,6 @@
     "sodium-signatures": "^2.1.1",
     "split-string": "^5.0.4",
     "split2": "^2.2.0",
-    "steggy": "^2.0.1",
-    "text2png": "^1.1.1",
     "through2": "^2.0.3",
     "tmp": "^0.0.33",
     "user-home": "^2.0.0"
