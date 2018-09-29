@@ -45,15 +45,7 @@ class Hub {
     this.config = config
     this.hubId = config.id
     this.hubIdBuffer = proquint.decode(this.hubId)
-    this.trustedKeys = config.trustedKeys || {}
-    this.getPublicKeys = this.getPublicKeys.bind(this)
     this.hashAlgorithm = 'sha256'
-  }
-
-  // just this hub's key and the bootstrapped trusted keys
-  // TODO add key lookup for trusted hubs and people
-  getPublicKeys(id) {
-    return id === this.hubId ? [this.config.publicKey] : this.trustedKeys[id]
   }
 
   getCommandStreams() {
@@ -111,7 +103,7 @@ class Hub {
             source = source.pipe(sinceFilterStream(since, self.hubId, obj => obj.data))
           }
           if (validate !== false) {
-            source = source.pipe(verificationStream(self.getPublicKeys))
+            source = source.pipe(verificationStream())
           }
           source.on('data', obj => {
             this.push(obj.original)
@@ -120,18 +112,18 @@ class Hub {
           source.on('end', () => {
             done()
           })
-        } else if (op === 'create-person') {
-          const { config } = await self.createPerson(args)
-          this.push(config)
-          self.scanPeople()
-        } else if (op === 'create-hub') {
-          const { config } = await self.createHub(args)
-          this.push(config)
-          self.scanHubs()
-        } else if (op === 'scan-hubs') {
-          await self.scanHubs()
-        } else if (op === 'scan-people') {
-          await self.scanPeople()
+        // } else if (op === 'create-person') {
+        //   const { config } = await self.createPerson(args)
+        //   this.push(config)
+        //   self.scanPeople()
+        // } else if (op === 'create-hub') {
+        //   const { config } = await self.createHub(args)
+        //   this.push(config)
+        //   self.scanHubs()
+        // } else if (op === 'scan-hubs') {
+        //   await self.scanHubs()
+        // } else if (op === 'scan-people') {
+        //   await self.scanPeople()
         } else if (op === 'create-message') {
           const [_, ...rest] = chunk.parts
           const newMessage = rest.join(" | ")
@@ -202,7 +194,7 @@ class Hub {
       debug("last sync:", since)
       let source = this.getMessagesStream({ parts: true })
         .pipe(filterStream(filter, obj => obj.data[0]))
-        .pipe(verificationStream(this.getPublicKeys))
+        .pipe(verificationStream())
         .pipe(sinceFilterStream(since, this.hubId, obj => obj.data, { saveSeen: true }))
       source.on('data', obj => {
         const profileRecord = {
@@ -226,41 +218,41 @@ class Hub {
     })
   }
 
-  createPerson(opts={}) {
-    return this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), 'person', opts)
-  }
+  // createPerson(opts={}) {
+  //   return this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), 'person', opts)
+  // }
+  //
+  // createHub(opts={}) {
+  //   return this.createProfile(crypto.randomBytes(2), 'hub', opts)
+  // }
 
-  createHub(opts={}) {
-    return this.createProfile(crypto.randomBytes(2), 'hub', opts)
-  }
+  // async createProfile(idBuffer, type, opts={}) {
+  //   const id = proquint.encode(idBuffer)
+  //
+  //   const keyPair = signatures.keyPair()
+  //   const keys = {
+  //     secretKey: bs58.encode(keyPair.secretKey),
+  //     publicKey: bs58.encode(keyPair.publicKey)
+  //   }
+  //
+  //   const t = timestamp.now()
+  //   const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
+  //   const message = this.createMessage(oyaml.stringify(announceMessage))
+  //   // TODO load all current trusted keys, not just bootstrapped keys
+  //   const trustedKeys = this.trustedKeys
+  //   return {
+  //     id,
+  //     keys,
+  //     message,
+  //     config: Object.assign({ id }, keys, { trustedKeys })
+  //   }
+  // }
 
-  async createProfile(idBuffer, type, opts={}) {
-    const id = proquint.encode(idBuffer)
-
-    const keyPair = signatures.keyPair()
-    const keys = {
-      secretKey: bs58.encode(keyPair.secretKey),
-      publicKey: bs58.encode(keyPair.publicKey)
-    }
-
-    const t = timestamp.now()
-    const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
-    const message = this.createMessage(oyaml.stringify(announceMessage))
-    // TODO load all current trusted keys, not just bootstrapped keys
-    const trustedKeys = this.trustedKeys
-    return {
-      id,
-      keys,
-      message,
-      config: Object.assign({ id }, keys, { trustedKeys })
-    }
-  }
-
-  announce(args) {
-    const fullId = proquint.encode(bs58.decode(this.config.publicKey))
-    const m = { ...args, type:'announce', id: fullId, publicKey: this.config.publicKey }
-    return this.createMessage(oyaml.stringify(m))
-  }
+  // announce(args) {
+  //   const fullId = proquint.encode(bs58.decode(this.config.publicKey))
+  //   const m = { ...args, type:'announce', id: fullId, publicKey: this.config.publicKey }
+  //   return this.createMessage(oyaml.stringify(m))
+  // }
 
   async createMessage(messageString, opts={ sign: true }) {
     const { body, meta = {} } = messages.parse(messageString)
@@ -269,7 +261,7 @@ class Hub {
     meta.route.push({ id: this.hubId, t: now })
     if (opts.sign) {
       if (!meta.signed) meta.signed = []
-      meta.signed.push({ id: this.hubId, signature: sign(body, this.config.secretKey) })
+      meta.signed.push({ id: this.hubId, publicKey: this.config.publicKey, signature: sign(body, this.config.secretKey) })
     }
     if (!meta.hash) {
       // create a hash based on the message body and this first route hub and timestamp

@@ -4,14 +4,15 @@ const through2 = require('through2')
 const signatures = require('sodium-signatures')
 const bs58 = require('bs58')
 
-const verify = async function(parsedMessageObject, getPublicKey) {
+const verify = async function(parsedMessageObject) {
   const sigResults = {}
   const bodyBuffer = new Buffer(parsedMessageObject.parts[0])
   let anyVerified = false
   const meta = parsedMessageObject.data[1]
   if (meta && meta.signed) {
-    const promises = meta.signed.map(async ({ id, signature }) => {
-      let pubKeys = await getPublicKey(id)
+    const promises = meta.signed.map(async ({ id, signature, publicKey }) => {
+      // let pubKeys = await getPublicKey(id)
+      let pubKeys = publicKey ? [publicKey] : []
       if (pubKeys && pubKeys.length > 0) {
         pubKeys.forEach(pubKey => {
           if (sigResults[id] === true) return
@@ -19,12 +20,12 @@ const verify = async function(parsedMessageObject, getPublicKey) {
           let verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), pubKeyBuffer)
           if (!verificationResult) verificationResult = signatures.verify(bodyBuffer, bs58.decode(signature), pubKeyBuffer)
           sigResults[id] = verificationResult
-          if (verificationResult) anyVerified = true  
+          if (verificationResult) anyVerified = true
         })
       } else {
         sigResults[id] = undefined
       }
-    })  
+    })
     await Promise.all(promises)
   }
   return {
@@ -33,9 +34,9 @@ const verify = async function(parsedMessageObject, getPublicKey) {
   }
 }
 
-module.exports = function(getKeys, opts={}) {
+module.exports = function(opts={}) {
   return through2.obj(async function(message, enc, callback) {
-    const result = await verify(message, getKeys)
+    const result = await verify(message)
     debug("verification result:", result)
     if (result.verified) {
       if (opts.includeInfo) {
