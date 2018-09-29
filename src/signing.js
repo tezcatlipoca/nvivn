@@ -6,7 +6,7 @@ const messages = require('./messages')
 
 const sign = function(message, secretKey) {
   const messageString = typeof message === 'string' ? message : oyaml.stringify(message)
-  const signature = signatures.sign(new Buffer(messageString), bs58.decode(secretKey))
+  const signature = signatures.sign(Buffer.from(messageString), bs58.decode(secretKey))
   // return signature.toString('base64')
   return bs58.encode(signature)
 }
@@ -14,7 +14,7 @@ const sign = function(message, secretKey) {
 const verify = async function(inputMessage, getPublicKey) {
   const message = typeof inputMessage === 'string' ? messages.parse(inputMessage, { parseBody: false }) : inputMessage
   const sigResults = {}
-  const bodyBuffer = new Buffer(message.rawBody)
+  const bodyBuffer = Buffer.from(message.rawBody)
   let anyVerified = false
   if (message.meta && message.meta.signed) {
     const promises = message.meta.signed.map(async ({ id, signature }) => {

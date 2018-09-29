@@ -6,7 +6,7 @@ const bs58 = require('bs58')
 
 const verify = async function(parsedMessageObject) {
   const sigResults = {}
-  const bodyBuffer = new Buffer(parsedMessageObject.parts[0])
+  const bodyBuffer = Buffer.from(parsedMessageObject.parts[0])
   let anyVerified = false
   const meta = parsedMessageObject.data[1]
   if (meta && meta.signed) {
