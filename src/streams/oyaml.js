@@ -18,7 +18,7 @@ const parse = function(opts={}) {
       }
       this.push(messageObj)
     } else {
-      this.push(parsed)      
+      this.push(parsed)
     }
     callback()
   })
@@ -26,9 +26,13 @@ const parse = function(opts={}) {
 
 const stringify = function(opts={}) {
   return through2.obj(function(chunk, enc, callback) {
-    debug("stringify chunk", chunk, typeof chunk, "parsed", oyaml.stringify(chunk))
-    const str = (opts.quoteSingleString === false && typeof chunk === 'string') ? chunk : oyaml.stringify(chunk)
-    this.push(str)
+    if (typeof chunk === 'string') {
+      this.push(chunk)
+    } else {
+      debug("stringify chunk", chunk, typeof chunk, "parsed", oyaml.stringify(chunk))
+      const str = (opts.quoteSingleString === false && typeof chunk === 'string') ? chunk : oyaml.stringify(chunk)
+      this.push(str)
+    }
     callback()
   })
 }

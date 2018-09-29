@@ -43,7 +43,7 @@ module.exports = function(opts={}) {
         const mergedMessageData = Object.assign({ info: result }, message)
         this.push(mergedMessageData)
       } else {
-        this.push(message)
+        this.push(message.original)
       }
     }
     callback()

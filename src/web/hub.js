@@ -78,6 +78,7 @@ const init = async function() {
     client.command(cmdField.value)
   })
   const client = await createClient({
+    messages: `text:hi | route:[id:tojop-hafoj-sabuz t:"2018-09-29 <1538239969>"] signed:[id:tojop-hafoj-sabuz publicKey:CQNcCZAuRoQQzYtyhj6E7csv2cHzAzGWiQ6Mm823YcDv signature:4dHgaXMakqdDPB79X69iPohYJYyBvE6ZPQRALE1ZGLr9Hzn5FeTkjsTjsj2EKx2mBtvxrFtHTAgReUL2CHww778J] hash:sha256-7dkgjs6hbeAkQzRKkc9NEWxHzPDMGqJLT8J7RqxhZHj5`,
     onData: (d) => {
       resultEl.innerHTML += renderMessage(d)
     },
@@ -86,7 +87,7 @@ const init = async function() {
   })
   window.command = client.command
 
-  // client.command('announce')
+  client.command('messages')
 
 }
 

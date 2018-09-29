@@ -15,7 +15,7 @@ module.exports = async function(opts) {
   }
   console.log("loaded config for", config.id)
 
-  const hub = new MemoryHub(config)
+  const hub = new MemoryHub(Object.assign({ messages: opts.messages || []}, config))
   window.hub = hub
 
   const command = function(cmd) {

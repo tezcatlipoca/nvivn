@@ -106,7 +106,7 @@ class Hub {
             source = source.pipe(verificationStream())
           }
           source.on('data', obj => {
-            this.push(obj.original)
+            this.push(typeof obj === 'string' ? obj : obj.original)
           })
           source.on('error', console.error)
           source.on('end', () => {
