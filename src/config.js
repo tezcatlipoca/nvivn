@@ -18,7 +18,6 @@ const loadUserConfig = function() {
 
 const loadLocalConfig = function(configPath, opts={}) {
   if (!configPath) configPath = path.resolve(process.cwd(), '.hub')
-  console.log("loading local config", configPath, opts)
   let config = loadConfig(configPath)
   if (Object.keys(config).length === 0 && opts.create) {
     config = idGenerator(opts.length || 4)

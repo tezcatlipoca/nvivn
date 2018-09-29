@@ -10,7 +10,7 @@ const FileHub = require('../src/hub/file')
 const signing = require('../src/signing')
 require('colors')
 
-const hubConfig = config.loadLocalConfig(null, { create: true, length: 2 })
+let hubConfig = config.loadLocalConfig()
 const userConfig = config.loadUserConfig()
 
 const hub = new FileHub(hubConfig)
@@ -26,6 +26,9 @@ let cmd = argv._.join(' ')
 debug('opts', argv)
 
 if (argv._[0] === 'server') {
+  if (hubConfig) {
+    hubConfig = config.loadLocalConfig(null, { create: true, length: 2 })
+  }
   const server = require('../src/server')
   const port = argv.p || 9999
   server(hub).listen(port, () => {

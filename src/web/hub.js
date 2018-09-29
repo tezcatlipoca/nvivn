@@ -2,6 +2,7 @@ require('babel-polyfill')
 const localforage = require('localforage')
 const oyaml = require('oyaml')
 const idGenerator = require('../id')
+const signing = require('../signing')
 
 const MemoryHub = require('../hub/memory')
 console.log("Hi, I'm a web hub!")
@@ -31,6 +32,12 @@ const init = async function() {
 
   window.command = function(cmd) {
     if (!cmd.startsWith('op:')) cmd = 'op:' + cmd
+    const meta = {
+      signed: [ { id:config.id, publicKey: config.publicKey, signature: signing.sign(cmd, config.secretKey) }]
+    }
+    cmd = [cmd, oyaml.stringify(meta)].join(" | ")
+    console.log("signed command:", cmd)
+
     const [input, output] = hub.getCommandStreams()
     input.write(cmd)
     output.on('data', console.log)
