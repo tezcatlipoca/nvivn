@@ -21,7 +21,7 @@ const loadLocalConfig = function(configPath, opts={}) {
   console.log("loading local config", configPath, opts)
   let config = loadConfig(configPath)
   if (Object.keys(config).length === 0 && opts.create) {
-    config = idGenerator(opts.length || 3)
+    config = idGenerator(opts.length || 4)
     console.log("writing new config to", configPath)
     fs.writeFileSync(configPath, oyaml.stringify(config))
   }

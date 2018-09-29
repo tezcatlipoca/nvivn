@@ -15,7 +15,7 @@ const init = async function() {
   // TODO encrypt this with some passphrase? don't like the secret key sitting in the browser
   let config = await localforage.getItem('hubConfig')
   if (!config) {
-    config = idGenerator(3)
+    config = idGenerator(8)
     console.log("generated config:", config)
     localforage.setItem('hubConfig', config)
   }
