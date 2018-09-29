@@ -258,7 +258,7 @@ class Hub {
 
   announce(args) {
     const fullId = proquint.encode(bs58.decode(this.config.publicKey))
-    const m = { ...args, id: fullId, publicKey: this.config.publicKey }
+    const m = { ...args, type:'announce', id: fullId, publicKey: this.config.publicKey }
     return this.createMessage(oyaml.stringify(m))
   }
 

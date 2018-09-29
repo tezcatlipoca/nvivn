@@ -1,50 +1,63 @@
-require('babel-polyfill')
-const localforage = require('localforage')
-const oyaml = require('oyaml')
-const idGenerator = require('../id')
-const signing = require('../signing')
-
-const MemoryHub = require('../hub/memory')
-console.log("Hi, I'm a web hub!")
+const createClient = require('./client')
 
 const init = async function() {
-  // const config = 'some oyaml config'
-  // localforage.setItem('hubConfig', oyaml.parse(config))
 
-  // let messages = `t:"2018-07-06 <1530893028>" id:fujub-jofop-nuvuv from:nuvuv type:person-profile publicKeys:[9Zrzncex867kuWoPkEBKCGGiYYn2j6ni9gJMunnS8mDR] | route:[id:nuvuv t:"2018-07-06 <1530893028>"] signed:[id:nuvuv signature:M8Hz2Pr4GELO/fz8pLeBe8M7mFBh9pTT5pE1oKXa6CSO2pgt3ATCEKmXSCi9MRJ2SOhSjoSkyKrPhcn7bG90BA==] hash:sha256-h1uC8orqXSp4k3SdUyLL5zDHKvq7BjDWM7nPnDt0moI=\n`
-  let messages = ''
+  // make a simple form
+  let html = `
 
-  // TODO encrypt this with some passphrase? don't like the secret key sitting in the browser
-  let config = await localforage.getItem('hubConfig')
-  if (!config) {
-    config = idGenerator(3)
-    console.log("generated config:", config)
-    localforage.setItem('hubConfig', config)
+  <style>
+  body {
+    font: sans-serif;
+    padding: 5px;
   }
-  console.log("loaded config for", config.id)
 
-  const hub = new MemoryHub(Object.assign({ messages }, config))
-  window.hub = hub
+  #hubcmd {
+    width: 100%;
+  }
 
-  hub.getCommandStreams()[0].write('op:announce')
+  input[type=text], pre {
+    font-family: monospace;
+    font-size: 1em;
+  }
+  #result {
+    overflow-x: scroll;
+    min-height: 4em;
+  }
+  </style>
 
-  console.log("hub messages:", hub.messages)
+  <form id="form" autocomplete="off">
+  <input type="text" id="hubcmd"></input>
+  </form>
+  <pre id="result"></pre>
+  `
+  document.body.innerHTML += html
 
-  window.command = function(cmd) {
-    if (!cmd.startsWith('op:')) cmd = 'op:' + cmd
-    const meta = {
-      signed: [ { id:config.id, publicKey: config.publicKey, signature: signing.sign(cmd, config.secretKey) }]
+  const cmdField = document.getElementById('hubcmd')
+  const resultEl = document.getElementById('result')
+
+  document.getElementById('form').addEventListener('submit', (evt) => {
+    evt.preventDefault()
+    console.log("form submitted")
+    console.log(cmdField.value)
+    client.command(cmdField.value)
+  })
+  let clearOnData = false
+  const client = await createClient({
+    onData: (d) => {
+      console.log(d)
+      if (clearOnData) {
+        resultEl.innerHTML = ''
+        clearOnData = false
+      }
+      resultEl.innerHTML += d
+    },
+    onError: (err) => console.error(err),
+    onEnd: () => {
+      console.log("-- done! --")
+      clearOnData = true
     }
-    cmd = [cmd, oyaml.stringify(meta)].join(" | ")
-    console.log("signed command:", cmd)
-
-    const [input, output] = hub.getCommandStreams()
-    input.write(cmd)
-    output.on('data', console.log)
-    output.on('error', console.error)
-    output.on('finish', () => console.log("-- done --"))
-    input.end()
-  }
+  })
+  window.command = client.command
 
 }
 
