@@ -1,8 +1,8 @@
 const debug = process.env.DEBUG ? require('debug')('filter:verification') : () => {}
 const through2 = require('through2')
-// const { verify } = require('../signing')
 const signatures = require('sodium-signatures')
 const bs58 = require('bs58')
+const memoize = require('memoizee')
 
 const verify = async function(parsedMessageObject) {
   const sigResults = {}
@@ -36,7 +36,8 @@ const verify = async function(parsedMessageObject) {
 
 module.exports = function(opts={}) {
   return through2.obj(async function(message, enc, callback) {
-    const result = await verify(message)
+    const memoizedVerify = memoize(verify, { primitive: true, max:10000 })
+    const result = await memoizedVerify(message)
     debug("verification result:", result)
     if (result.verified) {
       if (opts.includeInfo) {

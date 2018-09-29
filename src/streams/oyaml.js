@@ -1,12 +1,17 @@
 const debug = process.env.DEBUG ? require('debug')('oyaml:stream') : () => {}
 const oyaml = require('oyaml')
 const through2 = require('through2')
+const memoize = require('memoizee')
+
+const memoizedStringify = memoize(oyaml.stringify, { primitive: true, max:10000 })
+const memoizedParse = memoize(oyaml.parse, { length:2, max:10000 })
 
 const parse = function(opts={}) {
   return through2.obj(function(chunk, enc, callback) {
-    debug("parse chunk", chunk)
+    debug("start parse chunk", chunk)
     const str = chunk.toString()
-    const parsed = oyaml.parse(str, opts)
+    const parsed = memoizedParse(str, opts)
+    debug("end parse chunk")
     debug("parsing", str, "parsed:", parsed)
     if (opts.parts) {
       const messageObj = {
@@ -30,7 +35,7 @@ const stringify = function(opts={}) {
       this.push(chunk)
     } else {
       debug("stringify chunk", chunk, typeof chunk, "parsed", oyaml.stringify(chunk))
-      const str = (opts.quoteSingleString === false && typeof chunk === 'string') ? chunk : oyaml.stringify(chunk)
+      const str = (opts.quoteSingleString === false && typeof chunk === 'string') ? chunk : memoizedStringify(chunk)
       this.push(str)
     }
     callback()
