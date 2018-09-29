@@ -28,6 +28,8 @@ const server = (hub) => {
     let cmd = decodeURIComponent(pathname).slice(1).replace(/[+_]/g,' ')
     const commandAllowed = checkAdmin(cmd)
 
+    res.setHeader('Access-Control-Allow-Origin', '*')
+
     if (!commandAllowed) {
       res.writeHead(401)
       return res.end()
