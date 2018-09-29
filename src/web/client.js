@@ -1,4 +1,3 @@
-require('babel-polyfill')
 const localforage = require('localforage')
 const oyaml = require('oyaml')
 const idGenerator = require('../id')

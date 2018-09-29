@@ -4,17 +4,13 @@
   "main": "src/cli.js",
   "author": "Jesse Kriss <jesse@jklabs.net>",
   "bin": {
-    "route-earth": "bin/magicli.js",
     "othernet": "bin/othernet.js"
   },
   "scripts": {
-    "web": "poi src/web/index.js",
-    "web:hub": "parcel pages/hub.html",
+    "web": "budo src/web/hub --live -- -t babelify",
     "test": "faucet"
   },
   "dependencies": {
-    "babel-polyfill": "^6.26.0",
-    "base32-encoding": "^1.0.0",
     "bs58": "^4.0.1",
     "colors": "^1.3.0",
     "datemath-parser": "^1.0.6",
@@ -23,7 +19,6 @@
     "graceful-fs": "^4.1.11",
     "leaflet": "^1.3.1",
     "localforage": "^1.7.2",
-    "magicli": "^0.1.2",
     "memory-streams": "^0.1.3",
     "mingo": "^2.2.2",
     "minimist": "^1.2.0",
@@ -39,10 +34,10 @@
     "user-home": "^2.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0-beta.52",
+    "@babel/core": "^7.1.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "babelify": "^10.0.0",
     "faucet": "^0.0.1",
-    "parcel": "^1.9.6",
-    "poi": "^10.2.9",
     "stream-buffers": "^3.0.2",
     "tap": "^12.0.1"
   }
