@@ -6,15 +6,19 @@ const proquint = require('proquint')
 // TODO escape this stuff
 const renderMessage = (m, opts={}) => {
   let message = m
-  const parsed = oyaml.parse(m, { array: true })
-  const [main, ...rest] = m.split(/ ?\| ?/)
-  let userId
-  if (parsed[1] && parsed[1].signed && parsed[1].signed[0].publicKey) {
-    const publicKey = parsed[1].signed[0].publicKey
-    const keyBuf = bs58.decode(publicKey)
-    userId = proquint.encode(keyBuf.slice(0,6))
+  try {
+    const parsed = oyaml.parse(m, { array: true })
+    const [main, ...rest] = m.split(/ ?\| ?/)
+    let userId
+    if (parsed[1] && parsed[1].signed && parsed[1].signed[0].publicKey) {
+      const publicKey = parsed[1].signed[0].publicKey
+      const keyBuf = bs58.decode(publicKey)
+      userId = proquint.encode(keyBuf.slice(0,6))
+    }
+    return `<pre class="${parsed[0].type}">${userId ? `<span class="user">${userId}</span>` : ''}${main}<span class="meta"> ${rest.length > 0 ? '|' : ''} ${rest.join(' | ')}</span></pre>`
+  } catch (err) {
+    return `<pre class="result-message">${m}</pre>`
   }
-  return `<pre class="${parsed[0].type}">${userId ? `<span class="user">${userId}</span>` : ''}${main}<span class="meta"> | ${rest.join(' | ')}</span></pre>`
 }
 
 const init = async function() {
@@ -55,8 +59,19 @@ const init = async function() {
     margin-right: 0.7em;
   }
 
+  .hub {
+    color: green;
+  }
+
+  .result-message {
+    color: #666
+  }
+
   .meta {
     color: #999;
+  }
+  .error {
+    color: #da0000;
   }
   </style>
 
@@ -82,10 +97,16 @@ const init = async function() {
     onData: (d) => {
       resultEl.innerHTML += renderMessage(d)
     },
-    onError: (err) => console.error(err),
+    onError: (err) => {
+      // TODO escape this
+      resultEl.innerHTML = `<pre class="error">${err}</pre>`
+      console.error(err)
+    },
     onEnd: () => console.log("-- done! --")
   })
   window.command = client.command
+
+  // client.setHost('http://localhost:9999')
 
   client.command('messages')
 

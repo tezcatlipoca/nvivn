@@ -137,7 +137,7 @@ class Hub {
           }
         } else if (op === 'peers') {
           const allPeers = (self.peers || []).concat(self.config.staticPeers || [])
-          allPeers.forEach(p => this.push(p))
+          allPeers.forEach(p => this.push(Object.assign(p, { type: 'hub' })))
         } else {
           this.push({ error: `no command '${op}'` })
           context.cmd = null

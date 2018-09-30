@@ -45,6 +45,7 @@ const server = (hub) => {
       return res.end()
     }
 
+    res.setHeader('Content-Type', 'text/plain')
     if (!cmd.startsWith('op:')) cmd = 'op:' + cmd
     if (req.method === 'GET') {
       console.log("get command", cmd)
