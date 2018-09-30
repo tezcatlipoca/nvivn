@@ -31,6 +31,12 @@ module.exports = async function(opts) {
         host = null
         opts.onData(`back to local hub`)
         opts.onEnd()
+      } else if (internalCmd === 'whoami') {
+        opts.onData(oyaml.stringify({ id: config.id, publicKey: config.publicKey, type: 'identity' }))
+        opts.onEnd()
+      } else if (internalCmd === 'hub' || internalCmd === 'host') {
+        opts.onData(`connected to ${host || 'built in web hub'}`)
+        opts.onEnd()
       } else {
         opts.onError(`Didn't recognize internal command ${cmd}, ${JSON.stringify(internalCmd)}`)
         opts.onEnd()

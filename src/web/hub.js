@@ -54,8 +54,11 @@ const init = async function() {
     color: green
   }
 
-  .user {
+  .user, .identity {
     color: steelblue;
+  }
+
+  .user {
     margin-right: 0.7em;
   }
 
