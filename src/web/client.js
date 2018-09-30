@@ -47,11 +47,16 @@ module.exports = async function(opts) {
       }
       cmd = [cmd, oyaml.stringify(meta)].join(" | ")
       console.log("signed command:", cmd)
-      fetch(`${host}/${cmd.replace(/ /g,'_')}`)
+      const url = `${host}/${cmd.replace(/ /g,'_')}`
+      fetch(url)
         .then(r => r.text())
         .then(text => {
           text.trim().split("\n").forEach(line => opts.onData(line))
           if (opts.onEnd) opts.onEnd()
+        })
+        .catch(err => {
+          console.log("error:", err)
+          opts.onError(`Error reaching ${host}: ${err}`)
         })
 
     } else {
