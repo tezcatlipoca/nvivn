@@ -3,7 +3,7 @@ const oyaml = require('oyaml')
 const through2 = require('through2')
 const memoize = require('memoizee')
 
-const memoizedStringify = memoize(oyaml.stringify, { primitive: true, max:10000 })
+const memoizedStringify = memoize(oyaml.stringify, { max:10000 })
 const memoizedParse = memoize(oyaml.parse, { length:2, max:10000 })
 
 const parse = function(opts={}) {

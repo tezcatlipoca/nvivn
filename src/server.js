@@ -29,11 +29,6 @@ const server = (hub) => {
     if (pathname === '/') {
       res.write(hub.config.id)
       return res.end()
-    } else if (pathname === '/peers') {
-      const allPeers = (hub.peers || []).concat(hub.config.staticPeers || [])
-      res.setHeader('Content-Type', 'application/json')
-      res.write(JSON.stringify(allPeers))
-      return res.end()
     } else if (pathname === '/favicon.ico') {
       res.writeHead(404)
       return res.end()
@@ -65,12 +60,6 @@ const server = (hub) => {
       req.pipe(splitPipe).pipe(input)
       output.pipe(res)
     }
-  })
-}
-
-if (require.main === module) {
-  server.listen(port, () => {
-    console.log(`server is listening on ${port}`)
   })
 }
 

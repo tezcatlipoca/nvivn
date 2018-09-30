@@ -44,7 +44,7 @@ if (argv._[0] === 'server') {
       const flatPeers = peerNames
         .map(n => peers[n][0])
         .filter(p => p.service === 'route.earth')
-        .map(p => ({ name: p.name, address: p.address }))
+        .map(p => ({ name: p.name, address: p.address, publicKey: p.publicKey }))
       const self = flatPeers.find(p => p.name === hub.config.id).self = true
       return flatPeers
     }
