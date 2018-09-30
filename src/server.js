@@ -23,8 +23,23 @@ const server = (hub) => {
   }
 
   return http.createServer((req, res) => {
-    const [input, output] = hub.getCommandStreams()
+
     const { pathname } = url.parse(req.url, true)
+
+    if (pathname === '/') {
+      res.write(hub.config.id)
+      return res.end()
+    } else if (pathname === '/peers') {
+      const allPeers = (hub.peers || []).concat(hub.config.staticPeers || [])
+      res.setHeader('Content-Type', 'application/json')
+      res.write(JSON.stringify(allPeers))
+      return res.end()
+    } else if (pathname === '/favicon.ico') {
+      res.writeHead(404)
+      return res.end()
+    }
+
+    const [input, output] = hub.getCommandStreams()
     let cmd = decodeURIComponent(pathname).slice(1).replace(/[+_]/g,' ')
     const commandAllowed = checkAdmin(cmd)
 

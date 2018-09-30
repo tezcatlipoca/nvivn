@@ -38,12 +38,23 @@ if (argv._[0] === 'server') {
 
     const filterPeers = (peers) => {
       // console.log("all peers:", peers)
-      const peerNames = Object.keys(peers).filter(name => name !== hub.config.id)
+      const peerNames = Object.keys(peers)//.filter(name => name !== hub.config.id)
       // console.log("getting info for peers:", peerNames)
       // TODO later we can map multiple hosts for a single name
-      return peerNames.map(n => peers[n][0]).filter(p => p.service === 'route.earth')
+      const flatPeers = peerNames
+        .map(n => peers[n][0])
+        .filter(p => p.service === 'route.earth')
+        .map(p => ({ name: p.name, address: p.address }))
+      const self = flatPeers.find(p => p.name === hub.config.id).self = true
+      return flatPeers
     }
 
+    const updatePeers = (services) => {
+      hub.peers = filterPeers(services)
+      return hub.peers
+    }
+
+    console.log("-- announcing --")
     services.put({
       name: hub.config.id,
       service: 'route.earth',
@@ -51,15 +62,16 @@ if (argv._[0] === 'server') {
       // host:'example.com', // defaults to the network ip of the machine
       port//: 8080          // we are listening on port 8080.
     })
+
     services.on('up', function(name, service) {
       console.log("new peer:", name)
-      console.log("peers now", filterPeers(services.all()))
+      console.log("peers now", updatePeers(services.all()))
     });
     services.on('down', function(name, service) {
       console.log(name, "went away")
-      console.log("peers now", filterPeers(services.all()))
+      console.log("peers now", updatePeers(services.all()))
     });
-    console.log("all peers", filterPeers(services.all()))
+    console.log("all peers", updatePeers(services.all()))
   })
 } else {
   const parsedCmd = oyaml.parse(cmd, { array: true })
