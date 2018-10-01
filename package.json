@@ -1,10 +1,9 @@
 {
-  "name": "route-earth",
+  "name": "nvivn",
   "version": "0.0.1",
-  "main": "src/cli.js",
   "author": "Jesse Kriss <jesse@jklabs.net>",
   "bin": {
-    "othernet": "bin/othernet.js"
+    "nvivn": "bin/nvivn.js"
   },
   "scripts": {
     "web": "budo src/web/hub --live -- -t babelify",
