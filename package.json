@@ -2,6 +2,7 @@
   "name": "nvivn",
   "version": "0.0.1",
   "author": "Jesse Kriss <jesse@jklabs.net>",
+  "license": "MIT",
   "bin": {
     "nvivn": "bin/nvivn.js"
   },
