@@ -1,8 +1,8 @@
 # nvivn
 
-Early and experimental. [Email Jesse](jesse@jklabs.net) if you want to play along.
+🚨 Warning: early and experimental 🚨
 
-More at [https://nvivn.io](nvivn.io). Here's an early [demo video](https://nvivn.io/nvivn-demo.mp4) if you're into that sort of thing.
+More at [nvivn.io](https://nvivn.io). Here's an early [demo video](https://nvivn.io/nvivn-demo.mp4) if you're into that sort of thing.
 
 ## Installation
 
