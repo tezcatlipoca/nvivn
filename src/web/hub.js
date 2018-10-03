@@ -1,6 +1,6 @@
 const createClient = require('./client')
 const oyaml = require('oyaml')
-const bs58 = require('bs58')
+const multibase = require('multibase')
 const proquint = require('proquint')
 
 // TODO escape this stuff
@@ -12,7 +12,7 @@ const renderMessage = (m, opts={}) => {
     let userId
     if (parsed[1] && parsed[1].signed && parsed[1].signed[0].publicKey) {
       const publicKey = parsed[1].signed[0].publicKey
-      const keyBuf = bs58.decode(publicKey)
+      const keyBuf = multibase.decode(publicKey)
       userId = proquint.encode(keyBuf.slice(0,6))
     }
     return `<pre class="${parsed[0].type}">${userId ? `<span class="user">${userId}</span>` : ''}${main}<span class="meta"> ${rest.length > 0 ? '|' : ''} ${rest.join(' | ')}</span></pre>`
@@ -96,7 +96,6 @@ const init = async function() {
     client.command(cmdField.value)
   })
   const client = await createClient({
-    messages: `text:hi | route:[id:tojop-hafoj-sabuz t:"2018-09-29 <1538239969>"] signed:[id:tojop-hafoj-sabuz publicKey:CQNcCZAuRoQQzYtyhj6E7csv2cHzAzGWiQ6Mm823YcDv signature:4dHgaXMakqdDPB79X69iPohYJYyBvE6ZPQRALE1ZGLr9Hzn5FeTkjsTjsj2EKx2mBtvxrFtHTAgReUL2CHww778J] hash:sha256-7dkgjs6hbeAkQzRKkc9NEWxHzPDMGqJLT8J7RqxhZHj5`,
     onData: (d) => {
       resultEl.innerHTML += renderMessage(d)
     },

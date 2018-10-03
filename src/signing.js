@@ -1,14 +1,19 @@
 const debug = require('debug')('othernet:signing')
 const signatures = require('sodium-signatures')
-const bs58 = require('bs58')
+const multibase = require('multibase')
 const oyaml = require('oyaml')
 const messages = require('./messages')
 
 const sign = function(message, secretKey) {
   const messageString = typeof message === 'string' ? message : oyaml.stringify(message)
-  const signature = signatures.sign(Buffer.from(messageString), bs58.decode(secretKey))
-  // return signature.toString('base64')
-  return bs58.encode(signature)
+  try {
+    const secretKeyBuffer = multibase.decode(secretKey)
+    const signature = signatures.sign(Buffer.from(messageString), secretKeyBuffer)
+    // return signature.toString('base64')
+    return multibase.encode('base58flickr', signature).toString()
+  } catch (err) {
+    throw new Error("Couldn't decode secret key")
+  }
 }
 
 const verify = async function(inputMessage, getPublicKey) {
@@ -23,9 +28,10 @@ const verify = async function(inputMessage, getPublicKey) {
       if (pubKeys && pubKeys.length > 0) {
         pubKeys.forEach(pubKey => {
           if (sigResults[id] === true) return
-          const pubKeyBuffer = bs58.decode(pubKey)
-          let verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), pubKeyBuffer)
-          if (!verificationResult) verificationResult = signatures.verify(bodyBuffer, bs58.decode(signature), pubKeyBuffer)
+          const pubKeyBuffer = multibase.decode(pubKey)
+          const signatureBuffer = multibase.decode(signature)
+          let verificationResult = signatures.verify(bodyBuffer, signatureBuffer, pubKeyBuffer)
+          if (!verificationResult) verificationResult = signatures.verify(bodyBuffer, signatureBuffer, pubKeyBuffer)
           sigResults[id] = verificationResult
           if (verificationResult) anyVerified = true
         })

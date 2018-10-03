@@ -4,7 +4,7 @@ const split2 = require('split2')
 const port = 9999
 const oyaml = require('oyaml')
 const signatures = require('sodium-signatures')
-const bs58 = require('bs58')
+const multibase = require('multibase')
 
 const adminCommands = ['announce']
 
@@ -17,7 +17,7 @@ const server = (hub) => {
     const signed = meta && meta.signed[0]
     if (signed && signed.publicKey && hub.config.admins && hub.config.admins.includes(signed.publicKey)) {
       const rawCmd = cmd.split('|')[0].trim()
-      return signatures.verify(Buffer.from(rawCmd), bs58.decode(signed.signature), bs58.decode(signed.publicKey))
+      return signatures.verify(Buffer.from(rawCmd), multibase.decode(signed.signature), multibase.decode(signed.publicKey))
     }
     return false
   }

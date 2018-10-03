@@ -1,7 +1,7 @@
 const debug = process.env.DEBUG ? require('debug')('filter:verification') : () => {}
 const through2 = require('through2')
 const signatures = require('sodium-signatures')
-const bs58 = require('bs58')
+const multibase = require('multibase')
 const memoize = require('memoizee')
 
 const verify = async function(parsedMessageObject) {
@@ -16,11 +16,18 @@ const verify = async function(parsedMessageObject) {
       if (pubKeys && pubKeys.length > 0) {
         pubKeys.forEach(pubKey => {
           if (sigResults[id] === true) return
-          const pubKeyBuffer = bs58.decode(pubKey)
-          let verificationResult = signatures.verify(bodyBuffer, Buffer.from(signature, 'base64'), pubKeyBuffer)
-          if (!verificationResult) verificationResult = signatures.verify(bodyBuffer, bs58.decode(signature), pubKeyBuffer)
-          sigResults[id] = verificationResult
-          if (verificationResult) anyVerified = true
+          let pubKeyBuffer, signatureBuffer
+          try {
+            pubKeyBuffer = multibase.decode(pubKey)
+            signatureBuffer = multibase.decode(signature)
+            let verificationResult = signatures.verify(bodyBuffer, signatureBuffer, pubKeyBuffer)
+            if (!verificationResult) verificationResult = signatures.verify(bodyBuffer, signatureBuffer, pubKeyBuffer)
+            sigResults[id] = verificationResult
+            if (verificationResult) anyVerified = true
+          } catch (err) {
+            console.error(err)
+            sigResults[id] = false
+          }
         })
       } else {
         sigResults[id] = undefined

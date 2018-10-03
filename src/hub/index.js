@@ -1,7 +1,6 @@
 const debug = require('debug')('othernet:hub')
 const proquint = require('proquint')
-const crypto = require('crypto')
-const bs58 = require('bs58')
+const hashing = require('../hashing')
 const signatures = require('sodium-signatures')
 const oyaml = require('oyaml')
 const through2 = require('through2')
@@ -45,7 +44,6 @@ class Hub {
     this.config = config
     this.hubId = config.id
     this.hubIdBuffer = proquint.decode(this.hubId)
-    this.hashAlgorithm = 'sha256'
   }
 
   getCommandStreams() {
@@ -221,59 +219,20 @@ class Hub {
     })
   }
 
-  // createPerson(opts={}) {
-  //   return this.createProfile(Buffer.concat([crypto.randomBytes(4), this.hubIdBuffer]), 'person', opts)
-  // }
-  //
-  // createHub(opts={}) {
-  //   return this.createProfile(crypto.randomBytes(2), 'hub', opts)
-  // }
-
-  // async createProfile(idBuffer, type, opts={}) {
-  //   const id = proquint.encode(idBuffer)
-  //
-  //   const keyPair = signatures.keyPair()
-  //   const keys = {
-  //     secretKey: bs58.encode(keyPair.secretKey),
-  //     publicKey: bs58.encode(keyPair.publicKey)
-  //   }
-  //
-  //   const t = timestamp.now()
-  //   const announceMessage = Object.assign({t, id}, opts, { from:this.hubId, type:`${type}-profile`, t, id, publicKeys:[keys.publicKey] })
-  //   const message = this.createMessage(oyaml.stringify(announceMessage))
-  //   // TODO load all current trusted keys, not just bootstrapped keys
-  //   const trustedKeys = this.trustedKeys
-  //   return {
-  //     id,
-  //     keys,
-  //     message,
-  //     config: Object.assign({ id }, keys, { trustedKeys })
-  //   }
-  // }
-
-  // announce(args) {
-  //   const fullId = proquint.encode(bs58.decode(this.config.publicKey))
-  //   const m = { ...args, type:'announce', id: fullId, publicKey: this.config.publicKey }
-  //   return this.createMessage(oyaml.stringify(m))
-  // }
-
   async createMessage(messageString, opts={ sign: true }) {
+    console.log("creating message", messageString, "with opts", opts)
     const { body, meta = {} } = messages.parse(messageString)
     const now = timestamp.now()
     if (!meta.route) meta.route = []
     meta.route.push({ id: this.hubId, t: now })
     if (opts.sign) {
       if (!meta.signed) meta.signed = []
+      console.log("gonna sign")
       meta.signed.push({ id: this.hubId, publicKey: this.config.publicKey, signature: sign(body, this.config.secretKey) })
     }
     if (!meta.hash) {
-      // create a hash based on the message body and this first route hub and timestamp
-      const hash = crypto.createHash(this.hashAlgorithm)
-      hash.update(messageString)
-      hash.update(meta.route[0].id)
-      hash.update(labelValue.getValue(meta.route[0].t))
-      meta.hash = `${this.hashAlgorithm}-${bs58.encode(hash.digest())}`
-      // meta.hash = `${this.hashAlgorithm}-${hash.digest('base64')}`
+      const hashData = [messageString, meta.route[0].id, labelValue.getValue(meta.route[0].t)]
+      meta.hash = hashing.hashEnc(hashData)
     }
     const message = messages.stringify({ body, meta })
     if (this.writeMessage) await this.writeMessage(message)
