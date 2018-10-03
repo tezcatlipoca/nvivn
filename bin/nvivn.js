@@ -9,6 +9,8 @@ const config = require('../src/config')
 const FileHub = require('../src/hub/file')
 const signing = require('../src/signing')
 const polo = require('polo')
+const multiaddr = require('multiaddr')
+const SERVICE_NAME = 'nvivn'
 
 let hubConfig = config.loadLocalConfig(null, { create: true, length: 2 })
 const userConfig = config.loadUserConfig()
@@ -43,9 +45,15 @@ if (argv._[0] === 'server') {
       // TODO later we can map multiple hosts for a single name
       const flatPeers = peerNames
         .map(n => peers[n][0])
-        .filter(p => p.service === 'route.earth')
-        .map(p => ({ name: p.name, address: p.address, publicKey: p.publicKey }))
-      const self = flatPeers.find(p => p.name === hub.config.id).self = true
+        .filter(p => p.service === SERVICE_NAME)
+        .map(p => ({
+          name: p.name,
+          address: p.address,
+          multiaddr: multiaddr.fromNodeAddress({ address: p.host, port: p.port }, p.transport).toString(),
+          publicKey: p.publicKey }
+        ))
+      const self = flatPeers.find(p => p.name === hub.config.id)
+      if (self) self.self = true
       return flatPeers
     }
 
@@ -57,11 +65,13 @@ if (argv._[0] === 'server') {
     console.log("-- announcing --")
     services.put({
       name: hub.config.id,
-      service: 'route.earth',
+      service: SERVICE_NAME,
+      transport: 'tcp',
       publicKey: hub.config.publicKey,
       // host:'example.com', // defaults to the network ip of the machine
       port//: 8080          // we are listening on port 8080.
     })
+    // console.log("all services:", services.all())
 
     services.on('up', function(name, service) {
       console.log("new peer:", name)

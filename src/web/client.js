@@ -1,5 +1,6 @@
 const localforage = require('localforage')
 const oyaml = require('oyaml')
+const multiaddr = require('multiaddr')
 const idGenerator = require('../id')
 const signing = require('../signing')
 
@@ -80,6 +81,12 @@ module.exports = async function(opts) {
   }
 
   const setHost = (url) => {
+    try {
+      const maddr = multiaddr(url)
+      const m = maddr.toOptions()
+      url = `http://${m.host}:${m.port}`
+    } catch (err) {
+    }
     if (!url.startsWith('http')) url = `http://${url}`
     console.log("setting host to", url)
     // try to reach the host
