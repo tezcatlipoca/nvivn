@@ -10,7 +10,7 @@ module.exports = async function(opts) {
 
   let config = await localforage.getItem('hubConfig')
   if (!config) {
-    config = idGenerator(3)
+    config = await idGenerator(3)
     console.log("generated config:", config)
     localforage.setItem('hubConfig', config)
   }
@@ -33,11 +33,33 @@ module.exports = async function(opts) {
         opts.onData(`back to local hub`)
         opts.onEnd()
       } else if (internalCmd === 'whoami') {
-        opts.onData(oyaml.stringify({ id: config.id, publicKey: config.publicKey, type: 'identity' }))
+        try {
+          opts.onData(oyaml.stringify({ id: config.id, publicKey: config.publicKey, type: 'identity' }))
+        } catch (err) {
+          opts.onError("no current user")
+        }
         opts.onEnd()
       } else if (internalCmd === 'hub' || internalCmd === 'host') {
         opts.onData(`connected to ${host || 'built in web hub'}`)
         opts.onEnd()
+      } else if (internalCmd === 'logout') {
+        localforage.removeItem('hubConfig')
+        config = null
+        opts.onData('logged out')
+        opts.onEnd()
+      } else if (internalCmd === 'generate-id' || internalCmd[0] === 'generate-id') {
+        console.log("generate-id args:", internalCmd[1])
+        opts.onData('working...')
+        idGenerator(3, internalCmd[1]).then(result => {
+          config = result
+          console.log("generated config:", config)
+          if (opts.onClear) opts.onClear()
+          opts.onData(oyaml.stringify({ id: config.id, publicKey: config.publicKey, type: 'identity' }))
+          opts.onEnd()
+          localforage.setItem('hubConfig', config)
+        }).catch(err => {
+          opts.onError(err)
+        })
       } else {
         opts.onError(`Didn't recognize internal command ${cmd}, ${JSON.stringify(internalCmd)}`)
         opts.onEnd()

@@ -16,11 +16,11 @@ const loadUserConfig = function() {
   return loadConfig(path.join(userHome, '.route-earth'))
 }
 
-const loadLocalConfig = function(configPath, opts={}) {
+const loadLocalConfig = async function(configPath, opts={}) {
   if (!configPath) configPath = path.resolve(process.cwd(), '.hub')
   let config = loadConfig(configPath)
   if (Object.keys(config).length === 0 && opts.create) {
-    config = idGenerator(opts.length || 4)
+    config = await idGenerator(opts.length || 4)
     console.log("writing new config to", configPath)
     fs.writeFileSync(configPath, oyaml.stringify(config))
   }

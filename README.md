@@ -42,5 +42,8 @@ In the web UI, you can use these commands, as well as a few extras:
 - `:whoami` will print your current identity information
 - `:hub` will print your current hub
 - `:set-hub | "some-server:port"` will switch to a new hub
+- `:logout` will delete your current identity information
+- `:generate-id` will create a new random identity
+- `:generate-id | username:somename passphrase:"some reasonably long passphrase"` will create the same identity every time for that combination of username (never shown) and passphrase
 
 You can also use any of the command line commands. (The "op:" prefix is optional.)

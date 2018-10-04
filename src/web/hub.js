@@ -99,6 +99,7 @@ const init = async function() {
     onData: (d) => {
       resultEl.innerHTML += renderMessage(d)
     },
+    onClear: () => resultEl.innerHTML = '',
     onError: (err) => {
       // TODO escape this
       resultEl.innerHTML = `<pre class="error">${err}</pre>`
