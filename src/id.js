@@ -1,10 +1,18 @@
 const proquint = require('proquint')
 const multibase = require('multibase')
 const signatures = require('sodium-signatures')
+const { generateId } = require('./passphrase-id')
 
-module.exports = function(idLength=3) {
-  const keyPair = signatures.keyPair()
-  const keys = {
+module.exports = async function(idLength=3, opts={}) {
+  console.log("generating id with opts", opts)
+  let keyPair
+  if (opts.email && opts.passphrase) {
+    keyPair = await generateId(opts.email, opts.passphrase)
+  } else {
+    keyPair = signatures.keyPair()
+  }
+  // console.log("using keypair:", keyPair)
+  keys = {
     secretKey: multibase.encode('base58flickr', keyPair.secretKey).toString(),
     publicKey: multibase.encode('base58flickr', keyPair.publicKey).toString()
   }
@@ -16,7 +24,11 @@ module.exports = function(idLength=3) {
 }
 
 if (require.main === module) {
-  const words = process.argv.slice(2)[0]
-  const id = module.exports(words)
-  console.log(JSON.stringify(id, null, 2))
+  const args = process.argv.slice(2)
+  const words = 3
+  module.exports(words, { email: args[0], passphrase: args[1]}).then(id => {
+    console.log("public key length:", multibase.decode(id.publicKey).length)
+    console.log("private key length:", multibase.decode(id.secretKey).length)
+    console.log(JSON.stringify(id, null, 2))
+  }).catch(console.error)
 }

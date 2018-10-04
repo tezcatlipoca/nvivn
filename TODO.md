@@ -1,3 +1,4 @@
+- remove othernet references (just debug, i think)
 - move web code into its repo (then can include canvas stuff)
 - add time check to signed admin commands
 - make a small client to add default type, ttl calculations, signing, etc.
