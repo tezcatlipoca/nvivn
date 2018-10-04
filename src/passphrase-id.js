@@ -28,7 +28,7 @@ function getKeyPair(key, salt, callback) {
 }
 
 function generateId(username, passphrase) {
-  const strength = zxcvbn(passphrase)
+  const strength = zxcvbn(passphrase.toString())
   // console.log("passphrase strength:", strength.score, strength.crack_times_display, strength.feedback)
   return new Promise((resolve, reject) => {
     if (strength.score < 4) {
