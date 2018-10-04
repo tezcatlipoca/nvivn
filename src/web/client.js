@@ -16,7 +16,7 @@ module.exports = async function(opts) {
   }
   console.log("loaded config for", config.id)
 
-  const hub = new MemoryHub(Object.assign({ messages: opts.messages }, config))
+  let hub = new MemoryHub(Object.assign({ messages: opts.messages }, config))
   window.hub = hub
   let host
 
@@ -53,6 +53,8 @@ module.exports = async function(opts) {
         idGenerator(3, internalCmd[1]).then(result => {
           config = result
           console.log("generated config:", config)
+          hub = new MemoryHub(config)
+          localforage.setItem('hubConfig', config)
           if (opts.onClear) opts.onClear()
           opts.onData(oyaml.stringify({ id: config.id, publicKey: config.publicKey, type: 'identity' }))
           opts.onEnd()
