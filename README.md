@@ -8,6 +8,16 @@ More at [nvivn.io](https://nvivn.io). Here's an early [demo video](https://nvivn
 
     npm install
     npm link
+    
+## Dependencies
+On fresh Ubuntu 18 you may need to install dependencies first:
+
+sudo apt-get install npm
+sudo apt-get install libtool
+sudo apt-get install libtool
+sudo apt-get install autoconf
+
+You can safely ignore the fsevents incompatibility warning
 
 ## Running
 
